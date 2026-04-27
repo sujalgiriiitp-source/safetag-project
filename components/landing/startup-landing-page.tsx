@@ -336,9 +336,9 @@ export function StartupLandingPage() {
                 🇮🇳 Now live in 9 cities · 12 venues · HackDiwas 3.0 Finalist
               </div>
               <h1 className="mt-6 text-balance text-5xl font-black leading-tight tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
-                Your belongings, safe.
+                Apna samaan safe rakho.
                 <span className="block bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
-                  Your mind, free.
+                  Tension free raho - har jagah.
                 </span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-500">
