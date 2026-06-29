@@ -5,19 +5,12 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
-  Building2,
   CheckCircle2,
-  Church,
   ExternalLink,
-  FerrisWheel,
-  GraduationCap,
-  Landmark,
-  MapPin,
+  MonitorSmartphone,
   PlayCircle,
   ShieldCheck,
-  Sparkles,
-  Star,
-  Trees
+  Star
 } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/shared/footer";
@@ -26,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { readApiJson } from "@/lib/api";
-import { MARKET_STATS, TESTIMONIALS, VENUE_TYPE_META } from "@/lib/constants";
 import { formatVenueType } from "@/lib/utils";
 import { PublicStats, VenueType } from "@/types";
 
@@ -41,109 +33,129 @@ type PublicVenue = {
 };
 
 const defaultStats: PublicStats = {
-  totalVenues: 12,
-  approvedVenues: 12,
-  citiesCovered: 9,
-  totalDeposits: 3,
-  liveDeposits: 3,
+  totalVenues: 11,
+  approvedVenues: 11,
+  citiesCovered: 11,
+  totalDeposits: 0,
+  liveDeposits: 0,
   venueTypes: 8,
-  todayDeposits: 1
+  todayDeposits: 0,
+  itemsSecured: 0
 };
 
 const venueTypeCards: Array<{
   type: VenueType;
   emoji: string;
   title: string;
-  description: string;
+  subtitle: string;
+  examples: string;
 }> = [
-  { type: "exam", emoji: "📚", title: "Exam Centers", description: "JEE, NEET, SSC, UP Police" },
-  { type: "temple", emoji: "🛕", title: "Temples", description: "Pilgrimage & religious sites" },
-  { type: "park", emoji: "🌿", title: "National Parks", description: "Wildlife & safari zones" },
-  { type: "museum", emoji: "🏛️", title: "Museums", description: "Heritage & cultural sites" },
-  { type: "religious", emoji: "🕌", title: "Mosques", description: "Friday prayer venues" },
-  { type: "amusement", emoji: "🎡", title: "Amusement Parks", description: "Water parks & theme parks" },
-  { type: "govt", emoji: "🏛️", title: "Govt Buildings", description: "Courts, offices, ministries" },
-  { type: "event", emoji: "🎪", title: "Events", description: "Concerts, fairs, exhibitions" }
+  { type: "exam", emoji: "📚", title: "Exam Centers", subtitle: "JEE · NEET · SSC · UP Police", examples: "CBT labs, coaching hubs, exam gates" },
+  { type: "temple", emoji: "🛕", title: "Temples & Shrines", subtitle: "Ram Mandir · Kashi · Tirupati", examples: "Darshan counters and pilgrim queues" },
+  { type: "park", emoji: "🌿", title: "National Parks", subtitle: "Corbett · Ranthambore · Dudhwa", examples: "Safari gates and wildlife zones" },
+  { type: "museum", emoji: "🏛️", title: "Museums", subtitle: "National Museum · Indian Museum", examples: "Heritage and cultural sites" },
+  { type: "religious", emoji: "🕌", title: "Religious Places", subtitle: "Gurudwaras · Mosques · Churches", examples: "Community spaces and prayer venues" },
+  { type: "amusement", emoji: "🎡", title: "Amusement Parks", subtitle: "Wonderla · Imagicaa · Water Parks", examples: "Ride entrances and wet zones" },
+  { type: "govt", emoji: "🏛️", title: "Govt Buildings", subtitle: "Courts · Rashtrapati Bhavan", examples: "Offices, ministries and secure entries" },
+  { type: "event", emoji: "🎪", title: "Events & Concerts", subtitle: "Festivals · Sports · Conferences", examples: "Temporary counters and VIP events" }
 ];
 
-const tabContent = {
-  visitors: [
-    "Walk to counter → No app, no account needed",
-    "Staff registers items → Takes 30 seconds",
-    "Get QR receipt → On phone + printed slip",
-    "Return & collect → Same QR, verified return"
-  ],
-  venues: [
-    "Register free → 5 minutes setup",
-    "Add your staff → They get instant access",
-    "Start today → Zero hardware purchase"
-  ],
-  ai: [
-    "Photo upload",
-    "Google Vision detects items",
-    "Items auto-fill with staff override"
-  ]
-};
+const visitorSteps = [
+  "Walk to any SafeTag counter",
+  "Staff scans and registers your items",
+  "Get instant QR slip + WhatsApp receipt",
+  "Show QR to collect your items anytime"
+];
 
-const competitorRows = [
-  ["Hardware cost", "Manual slips", "₹1-2 lakh/unit", "✅ Zero"],
-  ["Setup time", "Immediate", "Weeks", "✅ Same day"],
-  ["Exam centers", "✗ No system", "✗ Hardware barrier", "✅ Primary market"],
-  ["Tier-2/3 cities", "Paper slips", "✗ Limited", "✅ Everywhere"],
-  ["AI item detection", "✗", "✗", "✅ Google Vision"],
-  ["Guardian alerts", "✗", "✗", "✅ WhatsApp real-time"],
-  ["Photo proof", "✗", "✗", "✅ Built-in"],
-  ["Monthly cost", "₹0 but risky", "₹5000+", "✅ ₹499/mo"]
+const venueSteps = [
+  "Register free in under 5 minutes",
+  "Add your staff — they get instant access",
+  "Accept deposits at your counter",
+  "Track everything on live dashboard"
+];
+
+const marketStats = [
+  ["7,50,000+", "Temples in India"],
+  ["3,00,000+", "Mosques in India"],
+  ["7,657", "Gurudwaras"],
+  ["86 Lakh+", "Exam Students yearly"],
+  ["1,001+", "Amusement Parks"],
+  ["0", "Proper digital systems"]
+];
+
+const comparisonRows = [
+  ["Hardware Cost", "₹1–2 lakh/unit", "₹0 ✅"],
+  ["Setup Time", "Weeks", "Same day ✅"],
+  ["Exam Centers", "✗ Not served", "✅ Primary market"],
+  ["Tier-2/3 Cities", "✗ Limited", "✅ Everywhere"],
+  ["AI Detection", "✗ None", "✅ Google Vision"],
+  ["Guardian Alerts", "✗ None", "✅ WhatsApp"],
+  ["Operator Device", "Custom terminal", "Any phone ✅"]
 ];
 
 const pricingCards = [
   {
     name: "Starter",
-    price: "Free forever",
-    cta: "Start Free →",
+    price: "Free",
+    cta: "Get Started Free",
     href: "/register",
     featured: false,
     features: [
-      "✅ 50 deposits/month",
-      "✅ QR receipts",
-      "✅ WhatsApp alerts",
-      "✅ Basic analytics",
-      "✅ 1 staff member",
-      "❌ AI detection",
-      "❌ Photo proof"
+      "Up to 100 deposits/month",
+      "QR receipts",
+      "WhatsApp alerts (visitor)",
+      "Basic dashboard",
+      "1 operator account"
     ]
   },
   {
     name: "Pro",
     price: "₹499/month",
-    cta: "Start 14-day Free Trial →",
+    cta: "Start 14-day Free Trial",
     href: "/register",
     featured: true,
     features: [
-      "✅ Unlimited deposits",
-      "✅ AI item detection",
-      "✅ Photo proof system",
-      "✅ Advanced analytics",
-      "✅ 5 staff members",
-      "✅ Priority support",
-      "✅ Custom branding"
+      "Unlimited deposits",
+      "AI item detection",
+      "Guardian WhatsApp alerts",
+      "Advanced analytics",
+      "Up to 5 operators",
+      "Priority support",
+      "Custom branding on receipts"
     ]
   },
   {
     name: "Enterprise",
-    price: "Custom pricing",
-    cta: "Contact Us →",
+    price: "Custom",
+    cta: "Contact Us",
     href: "/about#contact",
     featured: false,
     features: [
-      "✅ Everything in Pro",
-      "✅ Unlimited staff",
-      "✅ Multiple locations",
-      "✅ API access",
-      "✅ Insurance integration",
-      "✅ Dedicated manager",
-      "✅ Government compliance"
+      "Multiple locations",
+      "API access",
+      "Insurance integration",
+      "Govt compliance reports",
+      "Dedicated account manager",
+      "Custom integrations"
     ]
+  }
+];
+
+const testimonials = [
+  {
+    quote: "Students aur parents dono ko WhatsApp receipt milti hai — isliye panic calls almost band ho gaye.",
+    name: "Sajid Khan",
+    role: "Exam Center Coordinator, Lucknow"
+  },
+  {
+    quote: "Manual slips ke jagah photo proof aur QR — trust turant improve hua.",
+    name: "Ritu Sharma",
+    role: "Temple Operations Lead, Ayodhya"
+  },
+  {
+    quote: "No hardware, no counter rebuild. Existing staff ne ek din mein system adopt kar liya.",
+    name: "Arjun Nair",
+    role: "Wildlife Gate Manager, Ramnagar"
   }
 ];
 
@@ -154,13 +166,13 @@ function useCountUp(value: number, active: boolean) {
     if (!active) return;
 
     let frame = 0;
-    const maxFrames = 36;
+    const maxFrames = 40;
     const timer = window.setInterval(() => {
       frame += 1;
       const progress = 1 - Math.pow(1 - frame / maxFrames, 3);
       setDisplay(Math.round(value * progress));
       if (frame >= maxFrames) window.clearInterval(timer);
-    }, 24);
+    }, 22);
 
     return () => window.clearInterval(timer);
   }, [active, value]);
@@ -170,44 +182,46 @@ function useCountUp(value: number, active: boolean) {
 
 function LiveStat({
   value,
-  suffix = "",
-  prefix = "",
   label,
-  active
+  active,
+  suffix = "",
+  prefix = ""
 }: {
   value: number;
-  suffix?: string;
-  prefix?: string;
   label: string;
   active: boolean;
+  suffix?: string;
+  prefix?: string;
 }) {
   const count = useCountUp(value, active);
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-      <p className="text-3xl font-black text-slate-900">
+    <div className="text-center">
+      <p className="text-3xl font-black text-white md:text-4xl">
         {prefix}
         {count}
         {suffix}
       </p>
-      <p className="mt-1 text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-300">{label}</p>
     </div>
   );
 }
 
 function getDirectionsUrl(venue: PublicVenue) {
-  return `https://maps.google.com/?q=${encodeURIComponent(`${venue.name}, ${venue.address}, ${venue.city}, ${venue.state}`)}`;
+  return `https://www.google.com/maps/search/${encodeURIComponent(`${venue.name} ${venue.address} ${venue.city} SafeTag`)}`;
 }
 
 export function StartupLandingPage() {
   const [stats, setStats] = useState<PublicStats>(defaultStats);
   const [venues, setVenues] = useState<PublicVenue[]>([]);
   const [waitlistCount, setWaitlistCount] = useState(47);
-  const [activeTab, setActiveTab] = useState<"visitors" | "venues" | "ai">("visitors");
+  const [activeTab, setActiveTab] = useState<"visitors" | "venues">("visitors");
   const [operatorSearch, setOperatorSearch] = useState("");
   const [waitlistForm, setWaitlistForm] = useState({
     email: "",
     phone: "",
     venueName: "",
+    venueType: "exam" as VenueType,
     city: ""
   });
   const [waitlistStatus, setWaitlistStatus] = useState("");
@@ -289,13 +303,13 @@ export function StartupLandingPage() {
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...waitlistForm, venueType: "exam" })
+        body: JSON.stringify(waitlistForm)
       });
       const data = await readApiJson<{ position: number }>(response, "Could not join waitlist");
-      setWaitlistStatus(`✅ You're on the list! We'll be in touch. Position #${data.position}`);
+      setWaitlistStatus("You're on the list! 🎉 We'll WhatsApp you within 24 hours.");
       setWaitlistCount((count) => Math.max(count + 1, data.position));
       toast.success("Waitlist joined successfully");
-      setWaitlistForm({ email: "", phone: "", venueName: "", city: "" });
+      setWaitlistForm({ email: "", phone: "", venueName: "", venueType: "exam", city: "" });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not join waitlist");
     } finally {
@@ -303,6 +317,7 @@ export function StartupLandingPage() {
     }
   }
 
+  const steps = activeTab === "visitors" ? visitorSteps : venueSteps;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -315,129 +330,134 @@ export function StartupLandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      <style jsx global>{`
+        @keyframes safetag-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-14px); }
+        }
+      `}</style>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Navbar />
       <main>
-        <section className="relative overflow-hidden bg-white">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: "radial-gradient(#bfdbfe 1px, transparent 1px)",
-              backgroundSize: "22px 22px"
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-white via-white/90 to-blue-50/90" />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:min-h-[calc(100svh-64px)] lg:grid-cols-[0.58fr_0.42fr]">
+        <section className="relative min-h-[calc(100svh-64px)] overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(8,145,178,0.24),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(37,99,235,0.24),transparent_30%)]" />
+          <div className="relative mx-auto grid min-h-[calc(100svh-64px)] max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-[0.55fr_0.45fr]">
             <div>
-              <div className="inline-flex animate-pulse items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                🇮🇳 Now live in 9 cities · 12 venues · HackDiwas 3.0 Finalist
+              <div className="inline-flex animate-pulse items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-1 text-sm font-semibold text-blue-100">
+                🇮🇳 Now live in 11 cities across India
               </div>
-              <h1 className="mt-6 text-balance text-5xl font-black leading-tight tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
-                Apna samaan safe rakho.
-                <span className="block bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
-                  Tension free raho - har jagah.
-                </span>
+              <h1 className="mt-7 max-w-4xl text-5xl font-black leading-[0.95] tracking-tight text-white md:text-7xl">
+                Your belongings are{" "}
+                <span className="bg-gradient-to-r from-cyan-300 to-teal-400 bg-clip-text text-transparent">safe</span>.
+                <span className="mt-2 block">Your mind is free.</span>
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-500">
-                India's first QR-based secure deposit system for temples, exam centers, parks and museums. Zero hardware. Instant setup.
+              <p className="mt-7 max-w-2xl text-xl leading-8 text-slate-300">
+                India's first QR-based secure deposit system for temples, exam centers, parks and museums. Zero hardware. Instant setup. WhatsApp alerts.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg" className="group rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl">
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg" className="group rounded-xl bg-blue-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500">
                   <Link href="/register">
                     Register Your Venue Free
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="rounded-xl border-slate-300 px-6 py-3 font-medium text-slate-700 transition-all hover:bg-slate-50">
+                <Button asChild size="lg" variant="outline" className="rounded-xl border-slate-600 bg-transparent px-8 py-4 text-lg font-semibold text-slate-300 hover:border-slate-400 hover:bg-white/5 hover:text-white">
                   <Link href="/whatsapp-demo">
-                    <PlayCircle className="size-4" />
-                    Watch Demo
+                    Watch 2-min Demo
+                    <PlayCircle className="size-5" />
                   </Link>
                 </Button>
               </div>
-              <div className="mt-8 flex flex-wrap gap-2">
-                {["✅ Zero Hardware", "🤖 AI Detection", "💬 WhatsApp Alerts", "🔐 QR Secured", "⚡ Same-Day Setup"].map((pill) => (
-                  <span key={pill} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+              <div className="mt-8 flex flex-wrap gap-3">
+                {["🔐 AI Verified", "📱 QR Secured", "💬 WhatsApp Alerts", "⚡ Zero Hardware"].map((pill) => (
+                  <span key={pill} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200">
                     {pill}
                   </span>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-2xl">
-              <div className="rounded-[1.5rem] bg-slate-950 p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">Live receipt</p>
-                    <p className="mt-2 text-2xl font-black">ST-EXAM-00012</p>
+            <div className="relative hidden lg:block" style={{ animation: "safetag-float 3s ease-in-out infinite" }}>
+              <div className="rounded-[2rem] border border-white/10 bg-white/10 p-4 shadow-2xl backdrop-blur">
+                <div className="rounded-[1.5rem] bg-slate-950 p-5 text-white ring-1 ring-white/10">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Live dashboard</p>
+                      <p className="mt-2 text-2xl font-black">DPS Computer Center</p>
+                    </div>
+                    <MonitorSmartphone className="size-10 text-teal-300" />
                   </div>
-                  <ShieldCheck className="size-10 text-emerald-400" />
-                </div>
-                <div className="mt-6 rounded-2xl bg-white p-5 text-slate-900">
-                  <div
-                    className="mx-auto flex size-36 items-center justify-center rounded-2xl border-4 border-blue-600 bg-slate-50"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(45deg, #0f172a 25%, transparent 25%), linear-gradient(-45deg, #0f172a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #0f172a 75%), linear-gradient(-45deg, transparent 75%, #0f172a 75%)",
-                      backgroundSize: "24px 24px",
-                      backgroundPosition: "0 0, 0 12px, 12px -12px, -12px 0"
-                    }}
-                  >
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-blue-600">QR</span>
-                  </div>
-                  <div className="mt-5 space-y-3">
-                    {["Mobile Phone", "Wallet", "Watch"].map((item) => (
-                      <div key={item} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm font-medium">
-                        <span>{item}</span>
-                        <CheckCircle2 className="size-4 text-emerald-500" />
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    {[
+                      ["24", "In custody"],
+                      ["18", "Returned"],
+                      ["02", "Overdue"],
+                      ["42", "Today"]
+                    ].map(([value, label]) => (
+                      <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                        <p className="text-2xl font-black text-white">{value}</p>
+                        <p className="text-xs text-slate-300">{label}</p>
                       </div>
                     ))}
                   </div>
-                </div>
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-slate-200">
-                  💬 Guardian notified on WhatsApp · Photo proof stored
+                  <div className="mt-5 rounded-2xl bg-white p-5 text-slate-900">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">Receipt</p>
+                        <p className="mt-1 font-mono text-xl font-black">ST-EXAM-00012</p>
+                      </div>
+                      <ShieldCheck className="size-9 text-teal-500" />
+                    </div>
+                    <div className="mt-5 space-y-2">
+                      {["Mobile", "Wallet", "Watch"].map((item) => (
+                        <div key={item} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold">
+                          {item}
+                          <CheckCircle2 className="size-4 text-teal-500" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-teal-400/20 bg-teal-400/10 p-4 text-sm font-semibold text-teal-100">
+                    WhatsApp sent · QR secured · Photo proof saved
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section ref={statsRef} className="mx-auto max-w-6xl px-6 py-12">
-          <div className="grid gap-4 md:grid-cols-4">
-            <LiveStat value={stats.approvedVenues} label="Venues Live" active={statsVisible} />
-            <LiveStat value={stats.citiesCovered} label="Cities" active={statsVisible} />
-            <LiveStat value={0} prefix="₹" label="Hardware Needed" active={statsVisible} />
-            <LiveStat value={86} suffix="L+" label="Students Need This" active={statsVisible} />
-          </div>
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
-            <p className="text-sm font-semibold text-slate-500">Trusted by venues across India</p>
-            <p className="mt-3 text-sm font-bold text-slate-800">
-              DPS Computer Center · Kashi Vishwanath · Jim Corbett · National Museum · Ram Mandir · +7 more
-            </p>
+        <section ref={statsRef} className="border-y border-slate-700/50 bg-slate-800 py-8">
+          <div className="mx-auto grid max-w-6xl gap-6 px-6 md:grid-cols-4">
+            <LiveStat value={stats.approvedVenues} suffix="+" label="Approved Venues" active={statsVisible} />
+            <LiveStat value={stats.citiesCovered} label="Cities Live" active={statsVisible} />
+            <LiveStat value={stats.itemsSecured} suffix="+" label="Items Secured" active={statsVisible} />
+            <div className="text-center">
+              <p className="text-3xl font-black text-white md:text-4xl">₹0</p>
+              <p className="mt-2 text-sm font-semibold text-slate-300">Hardware Cost</p>
+            </div>
           </div>
         </section>
 
-        <section id="how-it-works" className="mx-auto max-w-6xl px-6 py-16">
+        <section id="how-it-works" className="mx-auto max-w-6xl px-6 py-20">
           <div className="text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">How it works</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-900">One flow, every venue type</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-600">How it works</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-900">Dead simple. For everyone.</h2>
           </div>
-          <div className="mt-8 flex flex-wrap justify-center gap-2">
+          <div className="mt-8 flex justify-center gap-2">
             {[
               ["visitors", "For Visitors"],
-              ["venues", "For Venues"],
-              ["ai", "AI Detection"]
+              ["venues", "For Venues"]
             ].map(([value, label]) => (
               <button
                 key={value}
                 type="button"
-                onClick={() => setActiveTab(value as "visitors" | "venues" | "ai")}
+                onClick={() => setActiveTab(value as "visitors" | "venues")}
                 className={
                   activeTab === value
-                    ? "rounded-full bg-blue-600 px-5 py-2 text-sm font-bold text-white shadow-sm"
+                    ? "rounded-full bg-[#1E3A8A] px-5 py-2 text-sm font-bold text-white shadow-sm"
                     : "rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-500"
                 }
               >
@@ -446,149 +466,146 @@ export function StartupLandingPage() {
             ))}
           </div>
           <div className="mt-10 grid gap-5 lg:grid-cols-4">
-            {tabContent[activeTab].map((step, index) => (
-              <div key={step} className="relative rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                <div className="flex size-10 items-center justify-center rounded-full bg-blue-50 text-lg font-black text-blue-600">
+            {steps.map((step, index) => (
+              <div key={step} className="relative rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                <div className="flex size-11 items-center justify-center rounded-full bg-cyan-50 text-lg font-black text-cyan-700">
                   {index + 1}
                 </div>
                 <p className="mt-5 text-sm font-semibold leading-6 text-slate-700">{step}</p>
-                {index < tabContent[activeTab].length - 1 ? (
-                  <div className="absolute left-11 top-11 hidden h-px w-full bg-blue-100 lg:block" />
+                {index < steps.length - 1 ? (
+                  <div className="absolute left-12 top-11 hidden h-px w-full bg-cyan-100 lg:block" />
                 ) : null}
               </div>
             ))}
           </div>
         </section>
 
-        <section className="border-y border-slate-200 bg-white py-16">
+        <section className="border-y border-slate-200 bg-white py-20">
           <div className="mx-auto max-w-6xl px-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Venue types</p>
-                <h2 className="mt-3 text-4xl font-black text-slate-900">Built for India’s real counters</h2>
-              </div>
-              <p className="max-w-xl text-sm leading-6 text-slate-500">Each card maps to custom item categories, thermal receipts, and staff flows.</p>
+            <div className="text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-600">Venue types</p>
+              <h2 className="mt-3 text-4xl font-black text-slate-900">Built for real India</h2>
             </div>
             <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {venueTypeCards.map((card) => (
-                <div key={card.type} className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-md">
-                  <div className="text-3xl">{card.emoji}</div>
-                  <h3 className="mt-4 font-bold text-slate-800">{card.title}</h3>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">{card.description}</p>
-                  <p className="mt-4 text-xs font-bold text-blue-600">{venueCounts[card.type] ?? 0} venues active</p>
+                <div key={card.type} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-2 hover:border-cyan-400 hover:shadow-xl">
+                  <div className="text-4xl transition-transform group-hover:scale-110">{card.emoji}</div>
+                  <h3 className="mt-4 font-black text-slate-900">{card.title}</h3>
+                  <p className="mt-2 text-sm font-semibold text-slate-600">{card.subtitle}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">{card.examples}</p>
+                  <p className="mt-4 text-xs font-bold text-cyan-700">{venueCounts[card.type] ?? 0} venues active</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 py-16">
-          <div className="rounded-[2rem] bg-slate-950 p-8 text-white shadow-xl md:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">India problem</p>
-            <h2 className="mt-3 text-4xl font-black">The gap is massive.</h2>
-            <p className="mt-3 text-slate-300">10 lakh+ venues. Zero digital systems.</p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {MARKET_STATS.slice(0, 6).map((stat) => (
-                <div key={stat.label} className="rounded-2xl bg-white/10 p-4 backdrop-blur">
-                  <p className="text-2xl font-black text-emerald-400">{stat.value}</p>
-                  <p className="mt-1 text-sm text-slate-300">{stat.label}</p>
+        <section className="bg-gradient-to-r from-slate-900 to-blue-950 py-20 text-white">
+          <div className="mx-auto max-w-6xl px-6">
+            <h2 className="max-w-3xl text-4xl font-black tracking-tight md:text-5xl">
+              The gap is massive.
+              <span className="block text-cyan-300">The digital solution barely existed.</span>
+            </h2>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {marketStats.map(([value, label]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur">
+                  <p className="text-3xl font-black text-teal-300">{value}</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-300">{label}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 md:flex-row md:items-center md:justify-between">
-              <p className="text-lg font-bold">Standard digital belongings systems: 0</p>
-              <Button asChild className="rounded-xl bg-blue-600 hover:bg-blue-700">
-                <Link href="/register">SafeTag is solving this. Join us.</Link>
-              </Button>
-            </div>
+            <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Data: IIT Bombay, NTA Official, WII, GlobeNewsWire
+            </p>
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 py-16">
+        <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Comparison</p>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-600">Comparison</p>
             <h2 className="mt-3 text-4xl font-black text-slate-900">Why venues choose SafeTag</h2>
           </div>
-          <div className="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="grid grid-cols-4 bg-slate-800 px-4 py-3 text-xs font-bold uppercase tracking-wide text-white">
-              <span>Feature</span>
-              <span>Traditional</span>
+          <div className="mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="grid grid-cols-3 bg-slate-900 px-4 py-4 text-xs font-bold uppercase tracking-wide text-white">
+              <span>Criteria</span>
               <span>SafeCloak/Tuckit</span>
               <span>SafeTag</span>
             </div>
-            {competitorRows.map((row, index) => (
-              <div key={row[0]} className={`grid grid-cols-4 px-4 py-4 text-sm ${index % 2 ? "bg-slate-50" : "bg-white"}`}>
+            {comparisonRows.map((row, index) => (
+              <div key={row[0]} className={`grid grid-cols-3 px-4 py-5 text-sm ${index % 2 ? "bg-slate-50" : "bg-white"}`}>
                 <span className="font-semibold text-slate-800">{row[0]}</span>
-                <span className="text-slate-400">{row[1]}</span>
-                <span className="text-slate-400">{row[2]}</span>
-                <span className="font-bold text-blue-600">{row[3]}</span>
+                <span className="text-slate-500">{row[1]}</span>
+                <span className="font-black text-[#1E3A8A]">{row[2]}</span>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="border-y border-slate-200 bg-white py-16">
-          <div className="mx-auto max-w-6xl px-6">
-            <div className="grid gap-8 lg:grid-cols-[0.42fr_0.58fr] lg:items-start">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Find operators</p>
-                <h2 className="mt-3 text-4xl font-black text-slate-900">Find SafeTag near your exam center</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-500">Thousands of venues. One platform.</p>
-                <Input
-                  className="mt-6 h-12 rounded-xl"
-                  value={operatorSearch}
-                  onChange={(event) => setOperatorSearch(event.target.value)}
-                  placeholder="Enter your city or exam center..."
-                />
-                <Link href="/nearby" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-blue-600">
-                  View all operators
-                  <ArrowRight className="size-4" />
-                </Link>
-              </div>
-              <div className="grid gap-4">
-                {(filteredVenues.length ? filteredVenues : venues.slice(0, 3)).map((venue) => (
-                  <div key={venue._id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-slate-800">{venue.name}</h3>
-                        <p className="mt-1 text-sm text-slate-500">{venue.city}, {venue.state}</p>
-                      </div>
-                      <Badge className="bg-blue-50 text-blue-700 shadow-none">{formatVenueType(venue.type)}</Badge>
+        <section className="border-y border-slate-200 bg-white py-20">
+          <div className="mx-auto grid max-w-6xl gap-8 px-6 lg:grid-cols-[0.42fr_0.58fr] lg:items-start">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-600">Find operators</p>
+              <h2 className="mt-3 text-4xl font-black text-slate-900">Find SafeTag near your exam center</h2>
+              <Input
+                className="mt-6 h-12 rounded-xl"
+                value={operatorSearch}
+                onChange={(event) => setOperatorSearch(event.target.value)}
+                placeholder="Search by city or exam center..."
+              />
+              <Link href="/nearby" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#1E3A8A]">
+                View all operators
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
+            <div className="grid gap-4">
+              {(filteredVenues.length ? filteredVenues : venues.slice(0, 3)).map((venue) => (
+                <div key={venue._id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-black text-slate-900">🏫 {venue.name}</h3>
+                      <p className="mt-1 text-sm text-slate-500">📍 {venue.city}, {venue.state}</p>
                     </div>
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <span className="text-sm font-semibold text-emerald-600">Open ✅</span>
-                      <a href={getDirectionsUrl(venue)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600">
-                        Get Directions
-                        <ExternalLink className="size-4" />
-                      </a>
-                    </div>
+                    <Badge className="bg-cyan-50 text-cyan-700 shadow-none">{formatVenueType(venue.type)}</Badge>
                   </div>
-                ))}
-              </div>
+                  <p className="mt-4 text-sm font-semibold text-emerald-600">🟢 Open & Accepting Deposits</p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    📦 {venue.customItemCategories.slice(0, 4).join(" · ")}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <a href={getDirectionsUrl(venue)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-4 py-2 text-sm font-bold text-white">
+                      Get Directions
+                      <ExternalLink className="size-4" />
+                    </a>
+                    <Link href={`/nearby?venue=${encodeURIComponent(venue._id)}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700">
+                      Details →
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <section id="pricing" className="mx-auto max-w-6xl px-6 py-16">
+        <section id="pricing" className="mx-auto max-w-6xl px-6 py-20">
           <div className="text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Pricing</p>
-            <h2 className="mt-3 text-4xl font-black text-slate-900">Simple, transparent pricing</h2>
-            <p className="mt-3 text-sm text-slate-500">Start free. Upgrade when you grow.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-600">Pricing</p>
+            <h2 className="mt-3 text-4xl font-black text-slate-900">Simple, honest pricing</h2>
+            <p className="mt-3 text-sm text-slate-500">Start free. Scale as you grow.</p>
           </div>
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
             {pricingCards.map((plan) => (
-              <div key={plan.name} className={`relative rounded-3xl border p-6 shadow-sm ${plan.featured ? "border-blue-500 bg-slate-950 text-white shadow-xl" : "border-slate-200 bg-white text-slate-900"}`}>
+              <div key={plan.name} className={`relative rounded-3xl border p-6 shadow-sm ${plan.featured ? "border-cyan-400 bg-slate-950 text-white shadow-2xl" : "border-slate-200 bg-white text-slate-900"}`}>
                 {plan.featured ? (
-                  <span className="absolute right-5 top-5 rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-slate-950">⭐ Most Popular</span>
+                  <span className="absolute right-5 top-5 rounded-full bg-cyan-300 px-3 py-1 text-xs font-black text-slate-950">Most Popular</span>
                 ) : null}
-                <h3 className="text-2xl font-black">{plan.name}</h3>
-                <p className={`mt-2 text-sm ${plan.featured ? "text-slate-300" : "text-slate-500"}`}>{plan.price}</p>
+                <h3 className="text-2xl font-black uppercase">{plan.name}</h3>
+                <p className={`mt-2 text-3xl font-black ${plan.featured ? "text-cyan-300" : "text-[#1E3A8A]"}`}>{plan.price}</p>
                 <div className="mt-6 space-y-3">
                   {plan.features.map((feature) => (
-                    <p key={feature} className={`text-sm ${plan.featured ? "text-slate-100" : "text-slate-600"}`}>{feature}</p>
+                    <p key={feature} className={`text-sm ${plan.featured ? "text-slate-100" : "text-slate-600"}`}>✓ {feature}</p>
                   ))}
                 </div>
-                <Button asChild className={`mt-8 w-full rounded-xl ${plan.featured ? "bg-blue-600 hover:bg-blue-700" : ""}`} variant={plan.featured ? "default" : "outline"}>
+                <Button asChild className={`mt-8 w-full rounded-xl ${plan.featured ? "bg-blue-600 hover:bg-blue-500" : ""}`} variant={plan.featured ? "default" : "outline"}>
                   <Link href={plan.href}>{plan.cta}</Link>
                 </Button>
               </div>
@@ -596,14 +613,10 @@ export function StartupLandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-slate-200 bg-white py-16">
+        <section className="border-y border-slate-200 bg-white py-20">
           <div className="mx-auto max-w-6xl px-6">
-            <div className="text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Testimonials</p>
-              <h2 className="mt-3 text-4xl font-black text-slate-900">Built with operators, trusted by venues</h2>
-            </div>
-            <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {TESTIMONIALS.map((testimonial) => (
+            <div className="grid gap-5 md:grid-cols-3">
+              {testimonials.map((testimonial) => (
                 <div key={testimonial.name} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="flex gap-1 text-amber-400">
                     {Array.from({ length: 5 }).map((_, index) => (
@@ -611,7 +624,7 @@ export function StartupLandingPage() {
                     ))}
                   </div>
                   <p className="mt-5 text-sm italic leading-6 text-slate-600">“{testimonial.quote}”</p>
-                  <p className="mt-5 font-bold text-slate-800">{testimonial.name}</p>
+                  <p className="mt-5 font-black text-slate-900">— {testimonial.name}</p>
                   <p className="text-xs text-slate-400">{testimonial.role}</p>
                 </div>
               ))}
@@ -619,26 +632,33 @@ export function StartupLandingPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 py-16">
-          <div className="rounded-[2rem] bg-slate-950 p-8 text-white shadow-xl md:p-10">
-            <div className="grid gap-8 lg:grid-cols-[0.38fr_0.62fr] lg:items-center">
-              <div>
-                <BadgeCheck className="size-10 text-emerald-400" />
-                <h2 className="mt-4 text-4xl font-black">Be among our first 100 venues</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-300">Early venues get 6 months Pro plan free.</p>
-                <p className="mt-5 text-sm font-bold text-emerald-300">Join {waitlistCount}+ venues already on waitlist</p>
-              </div>
-              <form onSubmit={submitWaitlist} className="grid gap-3 md:grid-cols-2">
-                <Input required type="email" value={waitlistForm.email} onChange={(event) => setWaitlistForm((form) => ({ ...form, email: event.target.value }))} placeholder="Email" className="h-12 rounded-xl border-white/20 bg-white text-slate-900" />
-                <Input required value={waitlistForm.phone} onChange={(event) => setWaitlistForm((form) => ({ ...form, phone: event.target.value }))} placeholder="Phone number" className="h-12 rounded-xl border-white/20 bg-white text-slate-900" />
-                <Input required value={waitlistForm.venueName} onChange={(event) => setWaitlistForm((form) => ({ ...form, venueName: event.target.value }))} placeholder="Venue name" className="h-12 rounded-xl border-white/20 bg-white text-slate-900" />
-                <Input required value={waitlistForm.city} onChange={(event) => setWaitlistForm((form) => ({ ...form, city: event.target.value }))} placeholder="City" className="h-12 rounded-xl border-white/20 bg-white text-slate-900" />
-                <Button disabled={submittingWaitlist} className="h-12 rounded-xl bg-emerald-500 font-bold text-white hover:bg-emerald-600 md:col-span-2">
-                  {submittingWaitlist ? "Joining..." : "Join Waitlist →"}
-                </Button>
-                {waitlistStatus ? <p className="text-sm font-semibold text-emerald-300 md:col-span-2">{waitlistStatus}</p> : null}
-              </form>
+        <section className="bg-blue-600 py-20 text-white">
+          <div className="mx-auto grid max-w-6xl gap-8 px-6 lg:grid-cols-[0.38fr_0.62fr] lg:items-center">
+            <div>
+              <BadgeCheck className="size-11 text-cyan-200" />
+              <h2 className="mt-4 text-4xl font-black">Be among the first 100 venues</h2>
+              <p className="mt-3 text-sm leading-6 text-blue-100">Early venues get 6 months Pro free</p>
+              <p className="mt-5 text-sm font-bold text-cyan-100">Join {waitlistCount}+ venues already waiting</p>
             </div>
+            <form onSubmit={submitWaitlist} className="grid gap-3 md:grid-cols-2">
+              <Input required type="email" value={waitlistForm.email} onChange={(event) => setWaitlistForm((form) => ({ ...form, email: event.target.value }))} placeholder="Email" className="h-12 rounded-xl border-white/20 bg-white text-slate-900" />
+              <Input required value={waitlistForm.phone} onChange={(event) => setWaitlistForm((form) => ({ ...form, phone: event.target.value }))} placeholder="Phone number" className="h-12 rounded-xl border-white/20 bg-white text-slate-900" />
+              <Input required value={waitlistForm.venueName} onChange={(event) => setWaitlistForm((form) => ({ ...form, venueName: event.target.value }))} placeholder="Venue name" className="h-12 rounded-xl border-white/20 bg-white text-slate-900" />
+              <select
+                value={waitlistForm.venueType}
+                onChange={(event) => setWaitlistForm((form) => ({ ...form, venueType: event.target.value as VenueType }))}
+                className="h-12 rounded-xl border border-white/20 bg-white px-3 text-sm text-slate-900 outline-none"
+              >
+                {venueTypeCards.map((venue) => (
+                  <option key={venue.type} value={venue.type}>{venue.title}</option>
+                ))}
+              </select>
+              <Input required value={waitlistForm.city} onChange={(event) => setWaitlistForm((form) => ({ ...form, city: event.target.value }))} placeholder="City" className="h-12 rounded-xl border-white/20 bg-white text-slate-900 md:col-span-2" />
+              <Button disabled={submittingWaitlist} className="h-12 rounded-xl bg-teal-500 font-bold text-white hover:bg-teal-400 md:col-span-2">
+                {submittingWaitlist ? "Joining..." : "Join Waitlist →"}
+              </Button>
+              {waitlistStatus ? <p className="text-sm font-semibold text-cyan-100 md:col-span-2">{waitlistStatus}</p> : null}
+            </form>
           </div>
         </section>
       </main>

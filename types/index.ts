@@ -226,6 +226,7 @@ export interface PlatformSnapshot {
 export interface PublicStats extends PlatformSnapshot {
   venueTypes: number;
   todayDeposits: number;
+  itemsSecured: number;
 }
 
 export interface WaitlistEntry {

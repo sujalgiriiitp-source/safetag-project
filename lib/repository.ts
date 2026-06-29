@@ -929,7 +929,8 @@ export async function getPublicStats(): Promise<PublicStats> {
     totalDeposits: deposits.length,
     citiesCovered: new Set(approvedVenues.map((venue) => venue.city)).size,
     venueTypes: new Set(approvedVenues.map((venue) => venue.type)).size,
-    todayDeposits: deposits.filter((deposit) => new Date(deposit.createdAt).toDateString() === today).length
+    todayDeposits: deposits.filter((deposit) => new Date(deposit.createdAt).toDateString() === today).length,
+    itemsSecured: deposits.reduce((count, deposit) => count + deposit.itemsList.length, 0)
   };
 }
 
