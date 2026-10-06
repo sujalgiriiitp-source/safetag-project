@@ -13,12 +13,17 @@ import { uploadBase64Asset } from "@/lib/storage";
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = request.nextUrl;
-    const venueId = searchParams.get("venueId") || undefined;
     const status = searchParams.get("status") || undefined;
     const query = searchParams.get("query") || undefined;
+    // Tenant isolation: only this operator's venue deposits, never cross-venue.
     const deposits = await getDeposits({
-      venueId,
+      venueId: session.venueId,
       status: status as any,
       query
     });
@@ -56,7 +61,10 @@ export async function POST(request: NextRequest) {
       itemsList: body.itemsList ?? [],
       aiDetectedItems: body.aiDetectedItems ?? [],
       visitorUploadPhotoUrl: uploadedImageUrl,
-      checkedInByPhone: session?.phone || body.checkedInByPhone || ""
+      // Always derive the operator identity from the authenticated session.
+      // Client-supplied checkedInByPhone is ignored to prevent spoofing;
+      // empty string = visitor self check-in (OTP-verified, no operator).
+      checkedInByPhone: session?.phone ?? ""
     });
 
     const venue = await getVenueById(deposit.venueId);
