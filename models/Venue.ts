@@ -27,7 +27,14 @@ const VenueSchema = new Schema(
     isApproved: { type: Boolean, default: false },
     operatorPhones: [String],
     averageRating: { type: Number, default: 0 },
-    brandColor: String
+    brandColor: String,
+    subscriptionStatus: {
+      type: String,
+      enum: ["none", "trial", "active", "expired"],
+      default: "none"
+    },
+    subscriptionExpiresAt: String,
+    subscriptionNotes: String
   },
   { timestamps: true }
 );

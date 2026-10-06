@@ -25,6 +25,7 @@ import {
   PlatformSnapshot,
   PublicStats,
   StaffPerformance,
+  SubscriptionStatus,
   Venue,
   VenueRegistrationInput,
   VenueSettingsInput,
@@ -178,6 +179,9 @@ function normalizeVenue(doc: any): Venue {
     isApproved: Boolean(doc.isApproved),
     operatorPhones: doc.operatorPhones ?? [],
     operatingHours: doc.operatingHours ?? "08:00 AM - 08:00 PM",
+    subscriptionStatus: doc.subscriptionStatus ?? "none",
+    subscriptionExpiresAt: doc.subscriptionExpiresAt,
+    subscriptionNotes: doc.subscriptionNotes,
     createdAt: new Date(doc.createdAt ?? new Date()).toISOString(),
     brandColor: doc.brandColor,
     averageRating: Number(doc.averageRating ?? 0)
@@ -206,8 +210,10 @@ function normalizeDeposit(doc: any): Deposit {
     tokenId: doc.tokenId,
     visitorName: doc.visitorName,
     visitorPhone: doc.visitorPhone,
+    visitorEmail: doc.visitorEmail,
     guardianName: doc.guardianName,
     guardianPhone: doc.guardianPhone,
+    guardianEmail: doc.guardianEmail,
     guardianRelation: doc.guardianRelation,
     venueId: doc.venueId.toString(),
     venueType: doc.venueType,
@@ -420,6 +426,7 @@ export async function createVenueRegistration(input: VenueRegistrationInput) {
     isApproved: false,
     operatorPhones: [input.contactPhone],
     operatingHours: "08:00 AM - 08:00 PM",
+    subscriptionStatus: "none" as const,
     createdAt: nowIso(),
     brandColor: undefined,
     averageRating: 0
@@ -490,6 +497,37 @@ export async function updateVenueApproval(venueId: string, isApproved: boolean) 
 
   await ensureSeedData();
   const updated = await VenueModel.findByIdAndUpdate(venueId, { isApproved }, { new: true });
+  return updated ? normalizeVenue(updated) : null;
+}
+
+export interface VenueSubscriptionUpdate {
+  status: SubscriptionStatus;
+  expiresAt?: string;
+  notes?: string;
+}
+
+/**
+ * Manual subscription management: the venue pays via UPI off-platform and the
+ * admin activates/renews the subscription here. No payment gateway involved.
+ */
+export async function updateVenueSubscription(venueId: string, input: VenueSubscriptionUpdate) {
+  const patch = {
+    subscriptionStatus: input.status,
+    subscriptionExpiresAt: input.expiresAt || undefined,
+    subscriptionNotes: input.notes || undefined
+  };
+
+  if (!isMongoConfigured()) {
+    const venue = getMockStore().venues.find((item) => item._id === venueId);
+    if (!venue) return null;
+    venue.subscriptionStatus = patch.subscriptionStatus;
+    venue.subscriptionExpiresAt = patch.subscriptionExpiresAt;
+    venue.subscriptionNotes = patch.subscriptionNotes;
+    return clone(venue);
+  }
+
+  await ensureSeedData();
+  const updated = await VenueModel.findByIdAndUpdate(venueId, patch, { new: true });
   return updated ? normalizeVenue(updated) : null;
 }
 
@@ -669,8 +707,10 @@ export async function createDeposit(input: CreateDepositInput) {
     tokenId,
     visitorName: input.visitorName,
     visitorPhone: input.visitorPhone,
+    visitorEmail: input.visitorEmail,
     guardianName: input.guardianName,
     guardianPhone: input.guardianPhone,
+    guardianEmail: input.guardianEmail,
     guardianRelation: "",
     venueId: venue._id,
     venueType: input.venueType,

@@ -7,6 +7,10 @@ const twilioCredentialsConfigured =
   Boolean(process.env.TWILIO_ACCOUNT_SID) &&
   Boolean(process.env.TWILIO_AUTH_TOKEN);
 
+export function isTwilioConfigured(): boolean {
+  return twilioCredentialsConfigured;
+}
+
 const verifyConfigured =
   twilioCredentialsConfigured && Boolean(process.env.TWILIO_VERIFY_SERVICE_SID);
 

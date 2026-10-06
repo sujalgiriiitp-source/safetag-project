@@ -37,6 +37,7 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
   const router = useRouter();
   const [visitorName, setVisitorName] = useState("");
   const [visitorPhone, setVisitorPhone] = useState("");
+  const [visitorEmail, setVisitorEmail] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [guardianPhone, setGuardianPhone] = useState("");
   const [items, setItems] = useState<string[]>([]);
@@ -102,6 +103,7 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
         body: JSON.stringify({
           visitorName,
           visitorPhone,
+          visitorEmail: visitorEmail || undefined,
           guardianName,
           guardianPhone,
           venueId: venue._id,
@@ -247,6 +249,16 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
                 value={visitorPhone}
                 onChange={(event) => setVisitorPhone(event.target.value)}
                 placeholder="+919812345678"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="visitor-email">Email (optional)</Label>
+              <Input
+                id="visitor-email"
+                type="email"
+                value={visitorEmail}
+                onChange={(event) => setVisitorEmail(event.target.value)}
+                placeholder="visitor@example.com"
               />
             </div>
             <div className="grid gap-2">

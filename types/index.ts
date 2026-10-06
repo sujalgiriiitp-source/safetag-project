@@ -10,6 +10,8 @@ export type VenueType =
 
 export type OperatorRole = "operator" | "admin";
 
+export type SubscriptionStatus = "none" | "trial" | "active" | "expired";
+
 export type DepositStatus =
   | "in_custody"
   | "returned"
@@ -45,6 +47,9 @@ export interface Venue {
   createdAt: string;
   brandColor?: string;
   averageRating?: number;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionExpiresAt?: string;
+  subscriptionNotes?: string;
 }
 
 export interface Operator {
@@ -63,8 +68,10 @@ export interface Deposit {
   tokenId: string;
   visitorName: string;
   visitorPhone: string;
+  visitorEmail?: string;
   guardianName?: string;
   guardianPhone?: string;
+  guardianEmail?: string;
   guardianRelation?: string;
   venueId: string;
   venueType: VenueType;
@@ -173,8 +180,10 @@ export interface DepositSearchFilters {
 export interface CreateDepositInput {
   visitorName: string;
   visitorPhone: string;
+  visitorEmail?: string;
   guardianName?: string;
   guardianPhone?: string;
+  guardianEmail?: string;
   venueId: string;
   venueType: VenueType;
   itemsList: string[];

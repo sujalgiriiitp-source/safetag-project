@@ -4,6 +4,7 @@ import { Clock3, MessageCircle, Package, ScanLine, ShieldCheck } from "lucide-re
 import { DashboardShell } from "@/components/shared/dashboard-shell";
 import { StatCard } from "@/components/shared/stat-card";
 import { ItemCard } from "@/components/operator/item-card";
+import { SubscriptionBanner } from "@/components/operator/subscription-banner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { getDashboardStats, getDeposits, getVenueById } from "@/lib/repository";
@@ -46,6 +47,7 @@ export default async function OperatorDashboardPage() {
         </div>
       }
     >
+      <SubscriptionBanner venue={venue} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="In custody right now"

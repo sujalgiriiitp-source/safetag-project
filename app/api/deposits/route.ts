@@ -51,11 +51,20 @@ export async function POST(request: NextRequest) {
       ? await uploadBase64Asset(body.imageBase64, "safetag/visitor-items", `visitor-${Date.now()}`)
       : "";
 
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const optionalEmail = (value: unknown): string | undefined => {
+      if (typeof value !== "string") return undefined;
+      const trimmed = value.trim();
+      return trimmed && emailPattern.test(trimmed) ? trimmed : undefined;
+    };
+
     const deposit = await createDeposit({
       visitorName: body.visitorName,
       visitorPhone: body.visitorPhone,
+      visitorEmail: optionalEmail(body.visitorEmail),
       guardianPhone: body.guardianPhone,
       guardianName: body.guardianName,
+      guardianEmail: optionalEmail(body.guardianEmail),
       venueId: body.venueId,
       venueType: body.venueType,
       itemsList: body.itemsList ?? [],

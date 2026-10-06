@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateVenueApproval } from "@/lib/repository";
+import { updateVenueApproval, updateVenueSubscription } from "@/lib/repository";
 import { getCurrentSession } from "@/lib/session";
+
+const SUBSCRIPTION_STATUSES = ["none", "trial", "active", "expired"] as const;
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +16,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { venueId, isApproved } = await request.json();
-    if (!venueId || typeof isApproved !== "boolean") {
+    const { venueId, isApproved, subscriptionStatus, subscriptionExpiresAt, subscriptionNotes } =
+      await request.json();
+    if (!venueId) {
+      return NextResponse.json({ error: "venueId is required." }, { status: 400 });
+    }
+
+    // Manual subscription management: the venue pays via UPI off-platform and
+    // the admin activates/renews the subscription here. No payment gateway.
+    if (typeof subscriptionStatus === "string") {
+      if (!SUBSCRIPTION_STATUSES.includes(subscriptionStatus as (typeof SUBSCRIPTION_STATUSES)[number])) {
+        return NextResponse.json({ error: "Invalid subscriptionStatus." }, { status: 400 });
+      }
+      const venue = await updateVenueSubscription(venueId, {
+        status: subscriptionStatus as (typeof SUBSCRIPTION_STATUSES)[number],
+        expiresAt: typeof subscriptionExpiresAt === "string" ? subscriptionExpiresAt : undefined,
+        notes: typeof subscriptionNotes === "string" ? subscriptionNotes : undefined
+      });
+      return NextResponse.json({ success: true, venue });
+    }
+
+    if (typeof isApproved !== "boolean") {
       return NextResponse.json(
         { error: "venueId and isApproved are required." },
         { status: 400 }

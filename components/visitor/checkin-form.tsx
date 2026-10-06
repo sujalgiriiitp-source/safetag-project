@@ -36,6 +36,7 @@ export function CheckinForm({ venues }: { venues: Venue[] }) {
   const [venueId, setVenueId] = useState("");
   const [visitorName, setVisitorName] = useState("");
   const [visitorPhone, setVisitorPhone] = useState("");
+  const [visitorEmail, setVisitorEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
@@ -118,6 +119,7 @@ export function CheckinForm({ venues }: { venues: Venue[] }) {
         body: JSON.stringify({
           visitorName,
           visitorPhone,
+          visitorEmail: visitorEmail || undefined,
           guardianPhone,
           guardianName,
           guardianRelation,
@@ -263,6 +265,16 @@ export function CheckinForm({ venues }: { venues: Venue[] }) {
                     placeholder="+919876543210"
                     value={visitorPhone}
                     onChange={(event) => setVisitorPhone(event.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="visitorEmail">Email (optional)</Label>
+                  <Input
+                    id="visitorEmail"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={visitorEmail}
+                    onChange={(event) => setVisitorEmail(event.target.value)}
                   />
                 </div>
               </div>
