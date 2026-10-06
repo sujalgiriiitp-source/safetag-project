@@ -17,13 +17,16 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sendOtp(phone, purpose);
+    // Note: the OTP code itself is never returned to the client.
     return NextResponse.json({
       success: true,
-      mode: result.mode,
-      demoCode: "demoCode" in result ? result.demoCode : undefined
+      mode: result.mode
     });
   } catch (error) {
     console.error(error);
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === "OTP_NOT_CONFIGURED") {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "OTP request failed" },
       { status: 500 }

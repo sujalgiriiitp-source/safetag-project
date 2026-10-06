@@ -121,3 +121,16 @@ export function compareItemLists(declaredItems: string[], detectedItems: string[
     mismatch: missing.length > 0 || unexpected.length > 0
   };
 }
+
+export function getAppBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (configured) return configured;
+  if (typeof window !== "undefined") {
+    console.warn(
+      "[safetag] NEXT_PUBLIC_APP_URL is not set — falling back to window.location.origin. " +
+        "Set NEXT_PUBLIC_APP_URL so QR codes and receipt links are absolute and scannable."
+    );
+    return window.location.origin;
+  }
+  return "";
+}

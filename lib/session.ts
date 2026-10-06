@@ -5,7 +5,21 @@ import { AuthSession } from "@/types";
 const COOKIE_NAME = "safetag-session";
 
 function getSecret() {
-  return process.env.SESSION_SECRET || "safetag-demo-secret";
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "SESSION_SECRET is not set. Set it to a long random value before deploying — " +
+          "without it, session cookies can be forged by anyone."
+      );
+    }
+    console.warn(
+      "[safetag] SESSION_SECRET is not set — using an insecure dev-only fallback secret. " +
+        "Never deploy without a real SESSION_SECRET."
+    );
+    return "safetag-demo-secret";
+  }
+  return secret;
 }
 
 function encode(payload: AuthSession) {

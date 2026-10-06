@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { DepositModel } from "@/models/Deposit";
+import { CounterModel } from "@/models/Counter";
 import { OperatorModel } from "@/models/Operator";
 import { OtpSessionModel } from "@/models/OtpSession";
 import { VenueModel } from "@/models/Venue";
@@ -45,6 +46,7 @@ type MockStore = {
     expiresAt: string;
     used: boolean;
   }>;
+  counters: Record<string, number>;
 };
 
 declare global {
@@ -143,7 +145,8 @@ function createMockStore(): MockStore {
         createdAt: nowIso()
       }
     ],
-    otpSessions: []
+    otpSessions: [],
+    counters: {}
   };
 }
 
@@ -309,6 +312,11 @@ async function upsertVenueOperators(venueId: string, phoneNumbers: string[], con
 
 async function ensureSeedData() {
   if (!isMongoConfigured()) return;
+  // Never pollute a production database with fake demo records by default.
+  // Explicit opt-in only: SEED_DEMO=true.
+  if (process.env.NODE_ENV === "production" && process.env.SEED_DEMO !== "true") {
+    return;
+  }
   await connectToDatabase();
 
   const venueCount = await VenueModel.countDocuments();
@@ -624,15 +632,34 @@ export async function getDepositByShortCode(shortCode: string) {
   return deposit ? normalizeDeposit(deposit) : null;
 }
 
+async function getNextTokenSequence(venueId: string): Promise<number> {
+  const key = `deposit-seq:${venueId}`;
+
+  if (!isMongoConfigured()) {
+    const store = getMockStore();
+    store.counters[key] = (store.counters[key] ?? 0) + 1;
+    return store.counters[key];
+  }
+
+  await connectToDatabase();
+  const counter = await CounterModel.findOneAndUpdate(
+    { _id: key },
+    { $inc: { seq: 1 } },
+    { upsert: true, new: true }
+  );
+  return counter.seq as number;
+}
+
 export async function createDeposit(input: CreateDepositInput) {
   const venue = await getVenueById(input.venueId);
   if (!venue) {
     throw new Error("Venue not found.");
   }
 
-  const existingDeposits = await getDeposits();
-  const nextSequence =
-    existingDeposits.filter((deposit) => deposit.venueType === input.venueType).length + 1;
+  // Atomic per-venue sequence: findOneAndUpdate + $inc can never hand out the
+  // same number twice, even under concurrent check-ins (the old
+  // count-then-increment raced and caused duplicate-key 500s).
+  const nextSequence = await getNextTokenSequence(venue._id);
   const tokenId = buildTokenId(input.venueType, nextSequence);
   const shortCode = buildShortCode(`${tokenId}-${Date.now()}`);
   const createdAt = nowIso();

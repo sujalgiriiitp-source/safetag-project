@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnalyticsSummary, getDeposits, getVenueById } from "@/lib/repository";
+import { getCurrentSession } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = request.nextUrl;
-    const venueId = searchParams.get("venueId");
     const kind = searchParams.get("kind");
 
-    if (!venueId || !kind) {
-      return NextResponse.json({ error: "venueId and kind are required." }, { status: 400 });
+    if (!kind) {
+      return NextResponse.json({ error: "kind is required." }, { status: 400 });
     }
+
+    // Tenant isolation: operators can only export their own venue's data.
+    const venueId = session.venueId;
 
     const venue = await getVenueById(venueId);
     if (!venue) {

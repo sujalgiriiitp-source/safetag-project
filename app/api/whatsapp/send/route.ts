@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendWhatsAppMessage } from "@/lib/twilio";
+import { getCurrentSession } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     if (!body.to || !body.message) {
       return NextResponse.json(

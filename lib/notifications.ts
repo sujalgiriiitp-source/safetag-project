@@ -1,12 +1,22 @@
 import { Deposit, Venue } from "@/types";
 import { sendWhatsAppAlert } from "@/lib/twilio";
 
-export const SAFETAG_PRIMARY_VISITOR = "+916306601592";
-export const SAFETAG_GUARDIAN_NUMBERS = ["+917007355621", "+918092120939"];
-export const SAFETAG_NOTIFICATION_NUMBERS = [
-  SAFETAG_PRIMARY_VISITOR,
-  ...SAFETAG_GUARDIAN_NUMBERS
-];
+// Dev-only override: when set, ALL notifications go to this number instead of
+// the visitor/guardian. Never hardcode real numbers here.
+const NOTIFICATIONS_DEBUG_TO = process.env.NOTIFICATIONS_DEBUG_TO?.trim() || "";
+
+function resolveRecipients(deposit: Deposit): { visitor: string[]; guardian: string[] } {
+  if (NOTIFICATIONS_DEBUG_TO) {
+    console.warn(
+      "[safetag] NOTIFICATIONS_DEBUG_TO is set — routing all notifications to the debug number."
+    );
+    return { visitor: [NOTIFICATIONS_DEBUG_TO], guardian: [NOTIFICATIONS_DEBUG_TO] };
+  }
+  return {
+    visitor: deposit.visitorPhone ? [deposit.visitorPhone] : [],
+    guardian: deposit.guardianPhone ? [deposit.guardianPhone] : []
+  };
+}
 
 function formatIndiaDateTime(value: string | Date) {
   return new Date(value).toLocaleString("en-IN", {
@@ -21,10 +31,12 @@ function formatIndiaDateTime(value: string | Date) {
 }
 
 function getReceiptUrl(tokenId: string) {
-  return `https://safetag.vercel.app/receipt/${tokenId}`;
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://safetag.vercel.app";
+  return `${base}/receipt/${tokenId}`;
 }
 
 export async function sendDepositCreatedMessages(deposit: Deposit, venue: Venue) {
+  const recipients = resolveRecipients(deposit);
   const items = deposit.itemsList.join(", ");
   const formattedTime = formatIndiaDateTime(deposit.checkInTime);
 
@@ -59,15 +71,18 @@ Wapas milne pe aapko phir se message aayega.
 
 _SafeTag — India's Secure Storage Platform_ 🇮🇳`;
 
-  await sendWhatsAppAlert([SAFETAG_PRIMARY_VISITOR], visitorMessage);
-  await sendWhatsAppAlert(SAFETAG_GUARDIAN_NUMBERS, guardianMessage);
+  await sendWhatsAppAlert(recipients.visitor, visitorMessage);
+  if (recipients.guardian.length > 0) {
+    await sendWhatsAppAlert(recipients.guardian, guardianMessage);
+  }
 }
 
 export async function sendDepositReturnedMessages(deposit: Deposit, venue: Venue) {
   const formattedTime = formatIndiaDateTime(deposit.returnTime ?? new Date());
+  const recipients = resolveRecipients(deposit);
 
   await sendWhatsAppAlert(
-    SAFETAG_NOTIFICATION_NUMBERS,
+    [...recipients.visitor, ...recipients.guardian],
     `✅ *SafeTag — Saman Wapas Mil Gaya!*
 
 ${deposit.visitorName} ne apna saman successfully 
@@ -89,9 +104,10 @@ export async function sendOverdueReminderMessage(deposit: Deposit, venue: Venue)
     3,
     Math.floor((Date.now() - new Date(deposit.checkInTime).getTime()) / (1000 * 60 * 60))
   );
+  const recipients = resolveRecipients(deposit);
 
   await sendWhatsAppAlert(
-    SAFETAG_NOTIFICATION_NUMBERS,
+    [...recipients.visitor, ...recipients.guardian],
     `⏰ *SafeTag Reminder*
 
 ${deposit.visitorName} ka saman abhi tak collect 

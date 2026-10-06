@@ -9,12 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildGuardianAlertMessage, formatWhatsappClock } from "@/lib/whatsapp-templates";
-import { formatDateTime, formatStatus, getStatusClasses, maskPhone } from "@/lib/utils";
+import { formatDateTime, formatStatus, getAppBaseUrl, getStatusClasses, maskPhone } from "@/lib/utils";
 
 export function ReceiptCard({ deposit, venue }: { deposit: Deposit; venue: Venue }) {
   const receiptUrl = useMemo(() => {
-    const base = process.env.NEXT_PUBLIC_APP_URL || "";
-    return `${base}/receipt/${deposit.tokenId}`;
+    return `${getAppBaseUrl()}/receipt/${deposit.tokenId}`;
   }, [deposit.tokenId]);
 
   function downloadQr() {
@@ -113,7 +112,7 @@ export function ReceiptCard({ deposit, venue }: { deposit: Deposit; venue: Venue
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:col-span-2">
             <p className="text-sm text-slate-500">Phone</p>
-            <p className="mt-2 text-lg font-semibold text-slate-800">{deposit.visitorPhone}</p>
+            <p className="mt-2 text-lg font-semibold text-slate-800">{maskPhone(deposit.visitorPhone)}</p>
           </div>
         </div>
 

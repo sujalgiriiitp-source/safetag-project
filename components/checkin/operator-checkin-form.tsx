@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { readApiJson } from "@/lib/api";
 import { VENUE_TYPE_META } from "@/lib/constants";
-import { maskPhone } from "@/lib/utils";
+import { getAppBaseUrl, maskPhone } from "@/lib/utils";
 import { buildGuardianPreviewMessage, formatWhatsappClock } from "@/lib/whatsapp-templates";
 import { Venue } from "@/types";
 
@@ -50,7 +50,7 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
   const receiptUrl = useMemo(
     () =>
       createdDeposit
-        ? `${process.env.NEXT_PUBLIC_APP_URL || ""}/receipt/${createdDeposit.tokenId}`
+        ? `${getAppBaseUrl()}/receipt/${createdDeposit.tokenId}`
         : "",
     [createdDeposit]
   );

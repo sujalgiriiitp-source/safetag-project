@@ -294,9 +294,11 @@ export function CheckinForm({ venues }: { venues: Venue[] }) {
                     Verify
                   </Button>
                 </div>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Demo mode without Twilio uses OTP <span className="font-semibold">{DEMO_OTP}</span>.
-                </p>
+                {process.env.NODE_ENV !== "production" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Demo mode without Twilio uses OTP <span className="font-semibold">{DEMO_OTP}</span>.
+                  </p>
+                ) : null}
               </div>
             </div>
           ) : null}

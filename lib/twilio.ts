@@ -52,8 +52,21 @@ export async function sendOtp(phone: string, purpose: OtpPurpose) {
     return { mode: "twilio" as const };
   }
 
+  if (process.env.NODE_ENV === "production") {
+    const error = new Error(
+      "OTP service not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_VERIFY_SERVICE_SID."
+    );
+    (error as NodeJS.ErrnoException).code = "OTP_NOT_CONFIGURED";
+    throw error;
+  }
+
+  // Dev-only fallback: create a local OTP session but NEVER expose the code
+  // to the client. Developers can read it from the server logs.
   await createOtpSession(phone, purpose, DEMO_OTP);
-  return { mode: "demo" as const, demoCode: DEMO_OTP };
+  console.warn(
+    `[safetag] Twilio not configured — dev-only OTP for ${phone}: ${DEMO_OTP}. Never use in production.`
+  );
+  return { mode: "demo" as const };
 }
 
 export async function verifyOtp(phone: string, purpose: OtpPurpose, code: string) {

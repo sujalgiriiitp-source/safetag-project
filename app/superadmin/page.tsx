@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/shared/dashboard-shell";
 import { BroadcastForm } from "@/components/superadmin/broadcast-form";
 import { VenueApprovalList } from "@/components/superadmin/venue-approval-list";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui/table";
 import { getDeposits, getPlatformSnapshot, getVenues, getWaitlistEntries } from "@/lib/repository";
+import { getCurrentSession } from "@/lib/session";
 import { formatDateTime, formatStatus, resolveDepositStatus } from "@/lib/utils";
 
 function getSuperAdminStatusBadgeClass(statusLabel: string) {
@@ -42,6 +44,13 @@ function getWeeklyDepositGrowth(deposits: Awaited<ReturnType<typeof getDeposits>
 }
 
 export default async function SuperAdminPage() {
+  const session = await getCurrentSession();
+  // TODO(security): AuthSession has no "superadmin" role (OperatorRole = "operator" | "admin").
+  // Gating on "admin" as a stopgap — add a real superadmin role/allowlist before production use.
+  if (!session || session.role !== "admin") {
+    redirect("/login");
+  }
+
   const [snapshot, venues, deposits, waitlistEntries] = await Promise.all([
     getPlatformSnapshot(),
     getVenues(),
