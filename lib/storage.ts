@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const configured =
   Boolean(process.env.CLOUDINARY_CLOUD_NAME) &&
@@ -15,6 +16,7 @@ if (configured) {
 
 export async function uploadBase64Asset(base64: string, folder: string, publicId: string) {
   if (!base64) return "";
+  if (isDemoMode()) return base64;
   if (!configured) return base64;
 
   const result = await cloudinary.uploader.upload(base64, {

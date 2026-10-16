@@ -3,6 +3,7 @@ import { Footer } from "@/components/shared/footer";
 import { Navbar } from "@/components/shared/navbar";
 import { ReceiptCard } from "@/components/visitor/receipt-card";
 import { getDepositByTokenId, getVenueById } from "@/lib/repository";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export default async function ReceiptPage({ params }: { params: { tokenId: string } }) {
   const deposit = await getDepositByTokenId(params.tokenId);
@@ -15,7 +16,7 @@ export default async function ReceiptPage({ params }: { params: { tokenId: strin
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-6 py-10">
-        <ReceiptCard deposit={deposit} venue={venue} />
+        <ReceiptCard deposit={deposit} venue={venue} demoMode={isDemoMode()} />
       </main>
       <Footer />
     </div>

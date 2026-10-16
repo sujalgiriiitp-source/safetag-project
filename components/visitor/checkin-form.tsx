@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ShieldCheck, MapPin, Smartphone, PackageCheck, Sparkles, Users, CheckCircle2 } from "lucide-react";
-import { DEFAULT_ITEM_CATEGORIES, DEMO_OTP, VENUE_TYPE_META } from "@/lib/constants";
+import { DEFAULT_ITEM_CATEGORIES, VENUE_TYPE_META } from "@/lib/constants";
 import { Venue, VenueType } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -80,9 +80,9 @@ export function CheckinForm({ venues }: { venues: Venue[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: visitorPhone, purpose: "visitor_login" })
       });
-      const data = await readApiJson<{ demoCode?: string }>(response, "Failed to send OTP");
+      await readApiJson(response, "Failed to send OTP");
       setOtpSent(true);
-      toast.success(data.demoCode ? `Demo OTP: ${DEMO_OTP}` : "OTP sent successfully");
+      toast.success("OTP sent successfully");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not send OTP");
     } finally {
@@ -306,11 +306,6 @@ export function CheckinForm({ venues }: { venues: Venue[] }) {
                     Verify
                   </Button>
                 </div>
-                {process.env.NODE_ENV !== "production" ? (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Demo mode without Twilio uses OTP <span className="font-semibold">{DEMO_OTP}</span>.
-                  </p>
-                ) : null}
               </div>
             </div>
           ) : null}

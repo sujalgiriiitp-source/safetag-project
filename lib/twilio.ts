@@ -1,14 +1,13 @@
 import Twilio from "twilio";
-import { DEMO_OTP } from "@/lib/constants";
-import { consumeOtpSession, createOtpSession } from "@/lib/repository";
 import { OtpPurpose } from "@/types";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const twilioCredentialsConfigured =
   Boolean(process.env.TWILIO_ACCOUNT_SID) &&
   Boolean(process.env.TWILIO_AUTH_TOKEN);
 
 export function isTwilioConfigured(): boolean {
-  return twilioCredentialsConfigured;
+  return !isDemoMode() && twilioCredentialsConfigured;
 }
 
 const verifyConfigured =
@@ -44,6 +43,9 @@ function assertRateLimit(key: string, limit = 5, windowMs = 10 * 60 * 1000) {
 }
 
 export async function sendOtp(phone: string, purpose: OtpPurpose) {
+  if (isDemoMode()) {
+    throw new Error("OTP delivery is disabled in DEMO MODE.");
+  }
   assertRateLimit(`${purpose}:${phone}`);
 
   const client = getTwilioClient();
@@ -56,24 +58,15 @@ export async function sendOtp(phone: string, purpose: OtpPurpose) {
     return { mode: "twilio" as const };
   }
 
-  if (process.env.NODE_ENV === "production") {
-    const error = new Error(
-      "OTP service not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_VERIFY_SERVICE_SID."
-    );
-    (error as NodeJS.ErrnoException).code = "OTP_NOT_CONFIGURED";
-    throw error;
-  }
-
-  // Dev-only fallback: create a local OTP session but NEVER expose the code
-  // to the client. Developers can read it from the server logs.
-  await createOtpSession(phone, purpose, DEMO_OTP);
-  console.warn(
-    `[safetag] Twilio not configured — dev-only OTP for ${phone}: ${DEMO_OTP}. Never use in production.`
+  const error = new Error(
+    "OTP service not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_VERIFY_SERVICE_SID."
   );
-  return { mode: "demo" as const };
+  (error as NodeJS.ErrnoException).code = "OTP_NOT_CONFIGURED";
+  throw error;
 }
 
 export async function verifyOtp(phone: string, purpose: OtpPurpose, code: string) {
+  if (isDemoMode()) return false;
   const client = getTwilioClient();
 
   if (verifyConfigured && client && process.env.TWILIO_VERIFY_SERVICE_SID) {
@@ -84,7 +77,7 @@ export async function verifyOtp(phone: string, purpose: OtpPurpose, code: string
     return result.status === "approved";
   }
 
-  return consumeOtpSession(phone, purpose, code);
+  return false;
 }
 
 function formatIndianNumber(phone: string): string {
@@ -114,6 +107,7 @@ function getWhatsAppFromNumber() {
 }
 
 export async function sendWhatsAppAlert(numbers: string[], message: string) {
+  if (isDemoMode()) return null;
   const uniqueNumbers = [...new Set(numbers.filter(Boolean))];
   if (!uniqueNumbers.length) return null;
 

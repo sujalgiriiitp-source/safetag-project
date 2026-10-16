@@ -11,7 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildGuardianAlertMessage, formatWhatsappClock } from "@/lib/whatsapp-templates";
 import { formatDateTime, formatStatus, getAppBaseUrl, getStatusClasses, maskPhone } from "@/lib/utils";
 
-export function ReceiptCard({ deposit, venue }: { deposit: Deposit; venue: Venue }) {
+export function ReceiptCard({
+  deposit,
+  venue,
+  demoMode = false
+}: {
+  deposit: Deposit;
+  venue: Venue;
+  demoMode?: boolean;
+}) {
   const receiptUrl = useMemo(() => {
     return `${getAppBaseUrl()}/receipt/${deposit.tokenId}`;
   }, [deposit.tokenId]);
@@ -76,7 +84,9 @@ export function ReceiptCard({ deposit, venue }: { deposit: Deposit; venue: Venue
 
         {deposit.guardianPhone ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <p className="font-semibold text-emerald-700">✅ WhatsApp sent to guardian</p>
+            <p className="font-semibold text-emerald-700">
+              {demoMode ? "DEMO MODE: Message not sent" : "✅ WhatsApp sent to guardian"}
+            </p>
             <p className="mt-1 text-sm text-slate-600">
               {maskPhone(deposit.guardianPhone)} at {formatWhatsappClock(deposit.checkInTime)}
             </p>
@@ -143,12 +153,14 @@ export function ReceiptCard({ deposit, venue }: { deposit: Deposit; venue: Venue
               Print again
             </Link>
           </Button>
-          <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
-            <a href={whatsappHref} target="_blank" rel="noreferrer">
-              <MessageCircle className="size-4" />
-              Share on WhatsApp
-            </a>
-          </Button>
+          {!demoMode ? (
+            <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
+              <a href={whatsappHref} target="_blank" rel="noreferrer">
+                <MessageCircle className="size-4" />
+                Share on WhatsApp
+              </a>
+            </Button>
+          ) : null}
         </div>
       </CardContent>
     </Card>

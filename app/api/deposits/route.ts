@@ -10,6 +10,7 @@ import {
 import { getCurrentSession } from "@/lib/session";
 import { sendDepositCreatedMessages } from "@/lib/notifications";
 import { uploadBase64Asset } from "@/lib/storage";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,8 +38,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const demoMode = isDemoMode();
     const session = await getCurrentSession();
+
+    if (demoMode && (!session || session.role !== "operator")) {
+      return NextResponse.json({ error: "Sign in as the demo operator to create deposits." }, { status: 401 });
+    }
     const body = await request.json();
+
+    if (demoMode) {
+      if (!session || body.venueId !== session.venueId) {
+        return NextResponse.json({ error: "Sign in as the demo operator to create deposits." }, { status: 401 });
+      }
+      const venue = await getVenueById(session.venueId);
+      if (!venue || body.venueType !== venue.type) {
+        return NextResponse.json({ error: "Only the seeded demo venue can accept deposits." }, { status: 400 });
+      }
+    }
 
     if (!body.visitorName || !body.visitorPhone || !body.venueId || !body.venueType) {
       return NextResponse.json(
@@ -47,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadedImageUrl = body.imageBase64
+    const uploadedImageUrl = !demoMode && body.imageBase64
       ? await uploadBase64Asset(body.imageBase64, "safetag/visitor-items", `visitor-${Date.now()}`)
       : "";
 
@@ -59,12 +75,12 @@ export async function POST(request: NextRequest) {
     };
 
     const deposit = await createDeposit({
-      visitorName: body.visitorName,
-      visitorPhone: body.visitorPhone,
-      visitorEmail: optionalEmail(body.visitorEmail),
-      guardianPhone: body.guardianPhone,
-      guardianName: body.guardianName,
-      guardianEmail: optionalEmail(body.guardianEmail),
+      visitorName: demoMode ? "Demo Visitor" : body.visitorName,
+      visitorPhone: demoMode ? "+910000000000" : body.visitorPhone,
+      visitorEmail: demoMode ? undefined : optionalEmail(body.visitorEmail),
+      guardianPhone: demoMode ? undefined : body.guardianPhone,
+      guardianName: demoMode ? undefined : body.guardianName,
+      guardianEmail: demoMode ? undefined : optionalEmail(body.guardianEmail),
       venueId: body.venueId,
       venueType: body.venueType,
       itemsList: body.itemsList ?? [],
@@ -83,11 +99,13 @@ export async function POST(request: NextRequest) {
 
     const pdfBuffer = await generateReceiptPdfBuffer(deposit, venue);
     const pdfDataUri = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
-    const pdfUrl = await uploadBase64Asset(pdfDataUri, "safetag/receipts", deposit.tokenId);
+    const pdfUrl = demoMode
+      ? ""
+      : await uploadBase64Asset(pdfDataUri, "safetag/receipts", deposit.tokenId);
     await updateDepositReceipt(deposit.tokenId, pdfUrl);
 
     const receipt = (await getDepositByTokenId(deposit.tokenId)) ?? deposit;
-    await sendDepositCreatedMessages(receipt, venue);
+    if (!demoMode) await sendDepositCreatedMessages(receipt, venue);
 
     return NextResponse.json({ success: true, deposit: receipt });
   } catch (error) {

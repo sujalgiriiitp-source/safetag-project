@@ -1,4 +1,12 @@
 /** @type {import("next").NextConfig} */
+const demoModeSetting = process.env.DEMO_MODE?.trim().toLowerCase();
+if (demoModeSetting && demoModeSetting !== "true" && demoModeSetting !== "false") {
+  throw new Error("DEMO_MODE must be either true or false.");
+}
+if (demoModeSetting === "true" && process.env.NODE_ENV === "production") {
+  throw new Error("DEMO_MODE cannot be enabled in production.");
+}
+
 const nextConfig = {
   swcMinify: false,
   experimental: {

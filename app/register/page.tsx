@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { readApiJson } from "@/lib/api";
-import { DEMO_OTP, HOW_IT_WORKS_VENUE, VENUE_TYPE_META } from "@/lib/constants";
+import { HOW_IT_WORKS_VENUE, VENUE_TYPE_META } from "@/lib/constants";
 import { VenueType } from "@/types";
 
 export default function RegisterVenuePage() {
@@ -52,9 +52,9 @@ export default function RegisterVenuePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: form.contactPhone, purpose: "venue_registration" })
       });
-      const data = await readApiJson<{ demoCode?: string }>(response, "Unable to send OTP");
+      await readApiJson(response, "Unable to send OTP");
       setOtpSent(true);
-      toast.success(data.demoCode ? `Demo OTP: ${DEMO_OTP}` : "OTP sent successfully");
+      toast.success("OTP sent successfully");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not send OTP");
     } finally {

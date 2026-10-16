@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendWhatsAppMessage } from "@/lib/twilio";
 import { getCurrentSession } from "@/lib/session";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export async function POST(request: NextRequest) {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json({ error: "WhatsApp messaging is disabled in DEMO MODE." }, { status: 403 });
+    }
+
     const session = await getCurrentSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

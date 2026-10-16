@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -16,6 +17,7 @@ const cached = global.mongooseCache ?? { conn: null, promise: null };
 global.mongooseCache = cached;
 
 export async function connectToDatabase() {
+  if (isDemoMode()) return null;
   if (!MONGODB_URI) return null;
   if (cached.conn) return cached.conn;
 
@@ -28,5 +30,6 @@ export async function connectToDatabase() {
 }
 
 export function isMongoConfigured() {
+  if (isDemoMode()) return false;
   return Boolean(MONGODB_URI);
 }

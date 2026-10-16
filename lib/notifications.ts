@@ -1,6 +1,7 @@
 import { Deposit, Venue } from "@/types";
 import { isTwilioConfigured, sendWhatsAppAlert } from "@/lib/twilio";
 import { isEmailConfigured, sendEmail } from "@/lib/email";
+import { isDemoMode } from "@/lib/demo-mode";
 
 // Dev-only override: when set, ALL phone notifications go to this number instead of
 // the visitor/guardian. Never hardcode real numbers here.
@@ -79,6 +80,7 @@ interface NotifyInput {
  * provided. Never throws — a missing channel is silently skipped.
  */
 async function notify(input: NotifyInput): Promise<void> {
+  if (isDemoMode()) return;
   const phones = [...new Set(input.phones.map((p) => p.trim()).filter(Boolean))];
   if (phones.length > 0 && isTwilioConfigured()) {
     await sendWhatsAppAlert(phones, input.message);

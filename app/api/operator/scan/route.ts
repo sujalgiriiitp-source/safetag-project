@@ -11,9 +11,11 @@ import { uploadBase64Asset } from "@/lib/storage";
 import { sendWhatsAppMessage } from "@/lib/twilio";
 import { compareItemLists } from "@/lib/utils";
 import { detectItemsFromImage } from "@/lib/vision";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export async function POST(request: NextRequest) {
   try {
+    const demoMode = isDemoMode();
     const session = await getCurrentSession();
     if (!session) {
       return NextResponse.json(
@@ -69,17 +71,19 @@ export async function POST(request: NextRequest) {
         comparison.mismatch
       );
 
-      await sendWhatsAppMessage(
-        deposit.visitorPhone,
-        `SafeTag update\nToken: ${deposit.tokenId}\nStatus: Stored\nVenue: ${venue.name}\nPhoto proof saved successfully.`
-      );
+      if (!demoMode) {
+        await sendWhatsAppMessage(
+          deposit.visitorPhone,
+          `SafeTag update\nToken: ${deposit.tokenId}\nStatus: Stored\nVenue: ${venue.name}\nPhoto proof saved successfully.`
+        );
+      }
 
       return NextResponse.json({ success: true, deposit: updated, comparison });
     }
 
     if (action === "returned") {
       const updated = await markDepositReturned(tokenId, session.phone);
-      await sendDepositReturnedMessages(updated ?? deposit, venue);
+      if (!demoMode) await sendDepositReturnedMessages(updated ?? deposit, venue);
 
       return NextResponse.json({ success: true, deposit: updated });
     }

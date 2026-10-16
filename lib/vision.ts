@@ -2,6 +2,7 @@ import vision from "@google-cloud/vision";
 import { DEFAULT_ITEM_CATEGORIES } from "@/lib/constants";
 import { VenueType } from "@/types";
 import { parseJsonEnv } from "@/lib/utils";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const credentials = parseJsonEnv<{
   client_email: string;
@@ -55,6 +56,7 @@ export async function detectItemsFromImage(
   venueType: VenueType
 ) {
   const fallback = detectFromFilename(fileName, venueType);
+  if (isDemoMode()) return fallback;
   if (!visionClient || !imageBase64) return fallback;
   const client = visionClient;
 

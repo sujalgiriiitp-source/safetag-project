@@ -18,8 +18,7 @@ export default function AuthPage() {
               SafeTag mein visitor ko login nahi karna padta. OTP sirf venue registration aur operator login ke liye use hota hai.
             </p>
             <p className="text-muted-foreground">
-              Demo mode uses OTP <span className="font-semibold text-primary">123456</span> if Twilio Verify
-              is not configured yet.
+              SMS verification requires a configured OTP provider. Local demo access uses dedicated demo credentials instead.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild>

@@ -8,7 +8,8 @@
     "start": "node node_modules/next/dist/bin/next start",
     "lint": "node node_modules/next/dist/bin/next lint",
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
-    "seed": "node --import tsx scripts/seed.ts"
+    "seed": "node --import tsx scripts/seed.ts",
+    "demo:hash-password": "node --import tsx scripts/hash-demo-password.ts"
   },
   "dependencies": {
     "@google-cloud/vision": "^4",

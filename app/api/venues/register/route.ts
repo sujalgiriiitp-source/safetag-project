@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createVenueRegistration } from "@/lib/repository";
 import { sendWhatsAppMessage } from "@/lib/twilio";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export async function POST(request: NextRequest) {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json({ error: "Venue registration is disabled in DEMO MODE." }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const requiredFields = [
