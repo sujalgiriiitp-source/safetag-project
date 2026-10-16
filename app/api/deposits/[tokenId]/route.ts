@@ -13,12 +13,29 @@ export async function GET(
     }
 
     const venue = await getVenueById(deposit.venueId);
-    // Public receipt lookup: never expose raw phone numbers. Token IDs are
-    // non-enumerable (random suffix), but masked PII is defense-in-depth.
+    // Public receipt and scanner lookups return only the fields those views need.
     const publicDeposit = {
-      ...deposit,
+      tokenId: deposit.tokenId,
+      visitorName: deposit.visitorName,
       visitorPhone: maskPhone(deposit.visitorPhone ?? ""),
-      guardianPhone: deposit.guardianPhone ? maskPhone(deposit.guardianPhone) : deposit.guardianPhone
+      guardianPhone: deposit.guardianPhone ? maskPhone(deposit.guardianPhone) : undefined,
+      venueId: deposit.venueId,
+      venueType: deposit.venueType,
+      venueCity: deposit.venueCity,
+      venueName: deposit.venueName,
+      itemsList: deposit.itemsList,
+      aiDetectedItems: deposit.aiDetectedItems,
+      operatorDetectedItems: deposit.operatorDetectedItems,
+      visitorUploadPhotoUrl: deposit.visitorUploadPhotoUrl,
+      operatorCapturedPhotoUrl: deposit.operatorCapturedPhotoUrl,
+      photoMismatchAlert: deposit.photoMismatchAlert,
+      status: deposit.status,
+      shortUrl: deposit.shortUrl,
+      receiptPdfUrl: deposit.receiptPdfUrl,
+      checkInTime: deposit.checkInTime,
+      returnTime: deposit.returnTime,
+      collectionTime: deposit.collectionTime,
+      printedAt: deposit.printedAt
     };
     return Response.json({ deposit: publicDeposit, venue });
   } catch (error) {

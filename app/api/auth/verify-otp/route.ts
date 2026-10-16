@@ -3,6 +3,7 @@ import { createSessionCookie } from "@/lib/session";
 import { getOperatorByPhone } from "@/lib/repository";
 import { verifyOtp } from "@/lib/twilio";
 import { OtpPurpose } from "@/types";
+import { isDemoMode } from "@/lib/demo-mode";
 
 async function readVerifyOtpBody(request: NextRequest) {
   const contentType = request.headers.get("content-type") || "";
@@ -33,6 +34,13 @@ async function readVerifyOtpBody(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json(
+        { error: "OTP login is disabled in DEMO MODE. Use the dedicated demo credentials." },
+        { status: 403 }
+      );
+    }
+
     const body = await readVerifyOtpBody(request);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "A valid request body is required." }, { status: 400 });

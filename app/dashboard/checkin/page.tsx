@@ -3,6 +3,7 @@ import { OperatorCheckinForm } from "@/components/checkin/operator-checkin-form"
 import { DashboardShell } from "@/components/shared/dashboard-shell";
 import { getVenueById } from "@/lib/repository";
 import { getCurrentSession } from "@/lib/session";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export default async function DashboardCheckinPage() {
   const session = await getCurrentSession();
@@ -17,7 +18,7 @@ export default async function DashboardCheckinPage() {
       description="Register walk-in visitors, detect items, print receipts, and move smoothly into storage proof capture."
       activeHref="/dashboard/checkin"
     >
-      <OperatorCheckinForm venue={venue} operatorPhone={session.phone} />
+      <OperatorCheckinForm venue={venue} operatorPhone={session.phone} demoMode={isDemoMode()} />
     </DashboardShell>
   );
 }

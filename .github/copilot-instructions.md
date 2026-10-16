@@ -4,13 +4,13 @@
 - This is a **Next.js App Router** app (`app/`) with server-rendered operator/admin pages and API route handlers under `app/api/**/route.ts`.
 - Core business/data logic is centralized in `lib/repository.ts`; API routes should orchestrate calls there, not reimplement persistence logic.
 - Data layer is dual-mode: if `MONGODB_URI` is missing, repository uses an in-memory seeded mock store; if present, it uses Mongoose models in `models/*.ts` and auto-seeds baseline data (`ensureSeedData`).
-- Auth is cookie-based HMAC session (`lib/session.ts`, cookie `safetag-session`), checked per page/route via `getCurrentSession()` (no middleware gate).
+- Auth uses cookie-based HMAC sessions normally and opaque server-side sessions in local demo mode (`lib/session.ts`, cookie `safetag-session`), checked per page/route via `getCurrentSession()` (no middleware gate).
 - Route aliasing/re-export is used to keep URLs stable (e.g. `app/dashboard/page.tsx` re-exports `app/operator/dashboard/page.tsx`, same for `/login` and settings).
 
 ## Primary Product Flows (Preserve These)
 - **Check-in flow:** `components/checkin/operator-checkin-form.tsx` -> `POST /api/deposits` -> `createDeposit` -> PDF generation (`lib/pdf.ts`) -> Cloudinary upload (`lib/storage.ts`) -> WhatsApp notifications (`lib/notifications.ts`).
 - **Scan/return flow:** `components/operator/qr-scanner.tsx` -> `POST /api/operator/scan` -> storage photo capture + AI detection (`lib/vision.ts`) + mismatch check (`compareItemLists` in `lib/utils.ts`) -> mark stored/returned.
-- **OTP flow:** `POST /api/auth/request-otp` + `POST /api/auth/verify-otp`; Twilio Verify when configured, otherwise demo OTP persisted via repository (`DEMO_OTP` in `lib/constants.ts`).
+- **OTP flow:** `POST /api/auth/request-otp` + `POST /api/auth/verify-otp`; Twilio Verify when configured. There is no local universal OTP fallback. Explicit local demo mode uses dedicated password credentials instead.
 
 ## Project-Specific Conventions
 - Use path aliases (`@/*`) from `tsconfig.json`; prefer imports like `@/lib/repository`.

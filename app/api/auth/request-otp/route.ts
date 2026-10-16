@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOperatorByPhone } from "@/lib/repository";
 import { sendOtp } from "@/lib/twilio";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export async function POST(request: NextRequest) {
   try {
+    if (isDemoMode()) {
+      return NextResponse.json(
+        { error: "OTP login is disabled in DEMO MODE. Use the dedicated demo credentials." },
+        { status: 403 }
+      );
+    }
+
     const { phone, purpose } = await request.json();
     if (!phone || !purpose) {
       return NextResponse.json({ error: "Phone and purpose are required." }, { status: 400 });

@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { getDashboardStats, getDeposits, getVenueById } from "@/lib/repository";
 import { getCurrentSession } from "@/lib/session";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export default async function OperatorDashboardPage() {
   const session = await getCurrentSession();
@@ -21,6 +22,7 @@ export default async function OperatorDashboardPage() {
   ]);
 
   const recent = deposits.slice(0, 3);
+  const demoMode = isDemoMode();
   const shareText = encodeURIComponent(
     `I'm using SafeTag for secure deposit management at ${venue?.name ?? "my venue"}. Join us: safetag.vercel.app`
   );
@@ -38,12 +40,14 @@ export default async function OperatorDashboardPage() {
           <Button asChild variant="outline">
             <Link href="/dashboard/scan">Scan QR</Link>
           </Button>
-          <Button asChild variant="outline">
-            <a href={`https://wa.me/?text=${shareText}`} target="_blank" rel="noreferrer">
-              <MessageCircle className="size-4" />
-              Share SafeTag
-            </a>
-          </Button>
+          {!demoMode ? (
+            <Button asChild variant="outline">
+              <a href={`https://wa.me/?text=${shareText}`} target="_blank" rel="noreferrer">
+                <MessageCircle className="size-4" />
+                Share SafeTag
+              </a>
+            </Button>
+          ) : null}
         </div>
       }
     >

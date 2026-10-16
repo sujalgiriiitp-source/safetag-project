@@ -2,7 +2,6 @@ import crypto from "crypto";
 import { DepositModel } from "@/models/Deposit";
 import { CounterModel } from "@/models/Counter";
 import { OperatorModel } from "@/models/Operator";
-import { OtpSessionModel } from "@/models/OtpSession";
 import { VenueModel } from "@/models/Venue";
 import { WaitlistModel } from "@/models/Waitlist";
 import {
@@ -21,7 +20,6 @@ import {
   Deposit,
   DepositSearchFilters,
   Operator,
-  OtpPurpose,
   PlatformSnapshot,
   PublicStats,
   StaffPerformance,
@@ -33,26 +31,21 @@ import {
   WaitlistInput
 } from "@/types";
 import { resolveDepositStatus } from "@/lib/utils";
+import { isDemoMode } from "@/lib/demo-mode";
 
 type MockStore = {
   venues: Venue[];
   operators: Operator[];
   deposits: Deposit[];
   waitlist: WaitlistEntry[];
-  otpSessions: Array<{
-    _id: string;
-    phone: string;
-    otp: string;
-    purpose: OtpPurpose;
-    expiresAt: string;
-    used: boolean;
-  }>;
   counters: Record<string, number>;
 };
 
 declare global {
   // eslint-disable-next-line no-var
   var safeTagMockStore: MockStore | undefined;
+  // eslint-disable-next-line no-var
+  var safeTagDemoMockStore: MockStore | undefined;
 }
 
 function clone<T>(value: T): T {
@@ -146,12 +139,59 @@ function createMockStore(): MockStore {
         createdAt: nowIso()
       }
     ],
-    otpSessions: [],
+    counters: {}
+  };
+}
+
+function createDemoMockStore(): MockStore {
+  const venue: Venue = {
+    _id: "demo-venue",
+    name: "SafeTag Demo Venue",
+    type: "museum",
+    city: "Demo City",
+    state: "Demo State",
+    address: "Local demonstration environment",
+    pincode: "000000",
+    contactName: "Demo Contact",
+    contactPhone: "0000000000",
+    contactEmail: "demo@example.test",
+    logoUrl: "/icons/safetag-icon.svg",
+    customItemCategories: DEFAULT_ITEM_CATEGORIES.museum,
+    customInstructions: DEFAULT_INSTRUCTIONS.museum,
+    thermalPrinterSize: "58mm",
+    isApproved: true,
+    operatorPhones: ["demo-operator"],
+    operatingHours: "08:00 AM - 08:00 PM",
+    createdAt: nowIso(),
+    subscriptionStatus: "active"
+  };
+
+  return {
+    venues: [venue],
+    operators: [
+      {
+        _id: "demo-operator",
+        name: "Demo Operator",
+        phone: "demo-operator",
+        venueId: venue._id,
+        role: "operator",
+        isActive: true,
+        totalCheckinsHandled: 0,
+        createdAt: nowIso()
+      }
+    ],
+    deposits: [],
+    waitlist: [],
     counters: {}
   };
 }
 
 function getMockStore() {
+  if (isDemoMode()) {
+    global.safeTagDemoMockStore ??= createDemoMockStore();
+    return global.safeTagDemoMockStore;
+  }
+
   if (!global.safeTagMockStore) {
     global.safeTagMockStore = createMockStore();
   }
@@ -549,65 +589,6 @@ export async function getOperatorsByVenue(venueId: string) {
   await ensureSeedData();
   const operators = await OperatorModel.find({ venueId }).sort({ createdAt: -1 });
   return operators.map(normalizeOperator);
-}
-
-export async function createOtpSession(phone: string, purpose: OtpPurpose, otp: string) {
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-
-  if (!isMongoConfigured()) {
-    getMockStore().otpSessions.push({
-      _id: crypto.randomUUID(),
-      phone,
-      otp,
-      purpose,
-      expiresAt,
-      used: false
-    });
-    return;
-  }
-
-  await ensureSeedData();
-  await OtpSessionModel.create({
-    phone,
-    otp,
-    purpose,
-    expiresAt: new Date(expiresAt),
-    used: false
-  });
-}
-
-export async function consumeOtpSession(phone: string, purpose: OtpPurpose, otp: string) {
-  if (!isMongoConfigured()) {
-    const store = getMockStore();
-    const session = [...store.otpSessions]
-      .reverse()
-      .find(
-        (item) =>
-          item.phone === phone &&
-          item.purpose === purpose &&
-          item.otp === otp &&
-          !item.used &&
-          new Date(item.expiresAt).getTime() > Date.now()
-      );
-
-    if (!session) return false;
-    session.used = true;
-    return true;
-  }
-
-  await ensureSeedData();
-  const session = await OtpSessionModel.findOne({
-    phone,
-    purpose,
-    otp,
-    used: false,
-    expiresAt: { $gt: new Date() }
-  }).sort({ createdAt: -1 });
-
-  if (!session) return false;
-  session.used = true;
-  await session.save();
-  return true;
 }
 
 function matchesDepositFilters(deposit: Deposit, filters: DepositSearchFilters) {

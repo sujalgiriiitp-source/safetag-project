@@ -35,8 +35,6 @@ const createdAt = "2026-04-17T08:00:00.000Z";
 export const APP_NAME = "SafeTag";
 export const APP_TAGLINE =
   "India's first hardware-free, software-only Universal Secure Belongings Management Platform.";
-export const DEMO_OTP = "123456";
-
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/register", label: "Register Venue" },

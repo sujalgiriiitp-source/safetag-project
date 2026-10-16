@@ -33,10 +33,18 @@ const QRCodeCanvas = dynamic(() => import("qrcode.react").then((mod) => mod.QRCo
   loading: () => <div className="h-[240px] w-[240px] rounded-sm bg-primary/10" aria-hidden="true" />,
 });
 
-export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; operatorPhone: string }) {
+export function OperatorCheckinForm({
+  venue,
+  operatorPhone,
+  demoMode = false
+}: {
+  venue: Venue;
+  operatorPhone: string;
+  demoMode?: boolean;
+}) {
   const router = useRouter();
-  const [visitorName, setVisitorName] = useState("");
-  const [visitorPhone, setVisitorPhone] = useState("");
+  const [visitorName, setVisitorName] = useState(demoMode ? "Demo Visitor" : "");
+  const [visitorPhone, setVisitorPhone] = useState(demoMode ? "+910000000000" : "");
   const [visitorEmail, setVisitorEmail] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [guardianPhone, setGuardianPhone] = useState("");
@@ -131,7 +139,7 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
       });
       toast.success("Receipt generated successfully");
 
-      if (data.deposit.guardianPhone) {
+      if (data.deposit.guardianPhone && !demoMode) {
         toast.success("✅ WhatsApp sent to guardian!");
       }
     } catch (error) {
@@ -239,7 +247,7 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
                 id="visitor-name"
                 value={visitorName}
                 onChange={(event) => setVisitorName(event.target.value)}
-                placeholder="Rahul Sharma"
+                placeholder={demoMode ? "Demo Visitor" : "Rahul Sharma"}
               />
             </div>
             <div className="grid gap-2">
@@ -248,38 +256,43 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
                 id="visitor-phone"
                 value={visitorPhone}
                 onChange={(event) => setVisitorPhone(event.target.value)}
-                placeholder="+919812345678"
+                placeholder={demoMode ? "+910000000000" : "+919812345678"}
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="visitor-email">Email (optional)</Label>
-              <Input
-                id="visitor-email"
-                type="email"
-                value={visitorEmail}
-                onChange={(event) => setVisitorEmail(event.target.value)}
-                placeholder="visitor@example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="guardian-name">Guardian name (optional)</Label>
-              <Input
-                id="guardian-name"
-                value={guardianName}
-                onChange={(event) => setGuardianName(event.target.value)}
-                placeholder="Parent or guardian"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="guardian-phone">Guardian phone (optional)</Label>
-              <Input
-                id="guardian-phone"
-                value={guardianPhone}
-                onChange={(event) => setGuardianPhone(event.target.value)}
-                placeholder="+919800000111"
-              />
-            </div>
-            <div className="grid gap-3 sm:col-span-2">
+            {!demoMode ? (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="visitor-email">Email (optional)</Label>
+                  <Input
+                    id="visitor-email"
+                    type="email"
+                    value={visitorEmail}
+                    onChange={(event) => setVisitorEmail(event.target.value)}
+                    placeholder="visitor@example.com"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="guardian-name">Guardian name (optional)</Label>
+                  <Input
+                    id="guardian-name"
+                    value={guardianName}
+                    onChange={(event) => setGuardianName(event.target.value)}
+                    placeholder="Parent or guardian"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="guardian-phone">Guardian phone (optional)</Label>
+                  <Input
+                    id="guardian-phone"
+                    value={guardianPhone}
+                    onChange={(event) => setGuardianPhone(event.target.value)}
+                    placeholder="+919800000111"
+                  />
+                </div>
+              </>
+            ) : null}
+            {!demoMode ? (
+              <div className="grid gap-3 sm:col-span-2">
               <div>
                 <Label>Guardian WhatsApp Preview</Label>
                 <p className="mt-1 text-sm text-slate-500">
@@ -291,7 +304,8 @@ export function OperatorCheckinForm({ venue, operatorPhone }: { venue: Venue; op
                 time={formatWhatsappClock(previewTime)}
                 shellClassName="bg-slate-50"
               />
-            </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-3">
