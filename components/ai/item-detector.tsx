@@ -43,13 +43,14 @@ export function ItemDetector({
             venueType
           })
         });
-        const data = await readApiJson<{ detectedItems?: string[] }>(response, "Could not detect items");
+        const data = await readApiJson<{ detectedItems?: string[]; source?: string; warning?: string }>(response, "Could not detect items");
         onDetected({
           imageBase64,
           previewUrl: preview,
           detectedItems: data.detectedItems ?? []
         });
-        toast.success("AI detection complete");
+        if (data.source === "google-vision") toast.success("AI suggestions ready. Operator confirmation required.");
+        else toast.info(data.source === "demo-filename" ? "Demo filename suggestions only" : "AI unavailable. Select items manually.");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Detection failed");
         onDetected({

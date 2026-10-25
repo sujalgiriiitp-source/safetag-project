@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDeposits, getVenues } from "@/lib/repository";
-import { getCurrentSession } from "@/lib/session";
+import { getCurrentSession, isPlatformAdmin } from "@/lib/session";
+import { csvCell } from "@/lib/pilot/security";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -10,7 +12,7 @@ export async function GET() {
     }
     // TODO(security): AuthSession has no "superadmin" role (OperatorRole = "operator" | "admin").
     // Gating on "admin" as a stopgap — add a real superadmin role/allowlist before production use.
-    if (session.role !== "admin") {
+    if (!isPlatformAdmin(session)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -28,8 +30,8 @@ export async function GET() {
           deposit.tokenId,
           deposit.visitorName,
           deposit.visitorPhone,
-          `"${deposit.itemsList.join("|")}"`
-        ].join(",");
+          deposit.itemsList.join("|")
+        ].map(csvCell).join(",");
       })
     ];
 

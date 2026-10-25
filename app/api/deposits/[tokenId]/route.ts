@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { getDepositByTokenId, getVenueById } from "@/lib/repository";
 import { maskPhone } from "@/lib/utils";
+import { getCurrentSession } from "@/lib/session";
+export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { tokenId: string } }
+  { params }: { params: Promise<{ tokenId: string }> }
 ) {
   try {
-    const deposit = await getDepositByTokenId(params.tokenId);
-    if (!deposit) {
+    const session = await getCurrentSession();
+    if (!session) return NextResponse.json({ error: "Sign in required for legacy lookup" }, { status: 401 });
+    const deposit = await getDepositByTokenId((await params).tokenId);
+    if (!deposit || deposit.venueId !== session.venueId) {
       return NextResponse.json({ error: "Deposit not found." }, { status: 404 });
     }
 

@@ -4,6 +4,9 @@ import { getOperatorByPhone } from "@/lib/repository";
 import { verifyOtp } from "@/lib/twilio";
 import { OtpPurpose } from "@/types";
 import { isDemoMode } from "@/lib/demo-mode";
+import { phone as phoneSchema, limit, failure } from "@/lib/pilot/security";
+import { platformFactor, platformPhone, registrationGrant } from "@/lib/pilot/auth";
+import { acceptInvite } from "@/lib/pilot/custody";
 
 async function readVerifyOtpBody(request: NextRequest) {
   const contentType = request.headers.get("content-type") || "";
@@ -56,9 +59,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Phone, purpose, and code are required." }, { status: 400 });
     }
 
-    const normalizedPhone = String(phone);
+    const normalizedPhone = phoneSchema.parse(String(phone));
     const normalizedPurpose = String(purpose) as OtpPurpose;
     const normalizedCode = String(code);
+    if (!["operator_login", "venue_registration"].includes(normalizedPurpose)) return NextResponse.json({ error: "Unsupported OTP purpose" }, { status: 400 });
+    await limit("otp-verify", normalizedPhone, 8, 600);
 
     const verified = await verifyOtp(normalizedPhone, normalizedPurpose, normalizedCode);
     if (!verified) {
@@ -66,7 +71,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (normalizedPurpose === "operator_login") {
-      const operator = await getOperatorByPhone(normalizedPhone);
+      if (platformPhone(normalizedPhone)) {
+        await platformFactor(normalizedPhone, String((body as Record<string, unknown>).totpCode || ""));
+        await createSessionCookie({ operatorId: `platform-${normalizedPhone.slice(-4)}`, venueId: "platform", role: "admin", name: "Platform administrator", phone: normalizedPhone, platformAdmin: true });
+        return NextResponse.json({ success: true, redirectTo: "/pilot/platform" });
+      }
+      const invite = (body as Record<string, unknown>).inviteToken;
+      const invited = typeof invite === "string" ? await acceptInvite(invite, normalizedPhone) : null;
+      const operator = invited ? { _id: invited._id.toString(), venueId: invited.venueId.toString(), role: invited.role, phone: invited.phone, name: invited.name } : await getOperatorByPhone(normalizedPhone);
       if (!operator) {
         return NextResponse.json({ error: "Operator account not found." }, { status: 404 });
       }
@@ -81,17 +93,14 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        redirectTo: "/dashboard",
+        redirectTo: "/pilot",
         operator
       });
     }
 
+    await registrationGrant(normalizedPhone);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "OTP verification failed" },
-      { status: 500 }
-    );
+    return failure(error);
   }
 }

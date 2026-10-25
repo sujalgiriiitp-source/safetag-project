@@ -3,6 +3,7 @@ import { DepositModel } from "@/models/Deposit";
 import { CounterModel } from "@/models/Counter";
 import { OperatorModel } from "@/models/Operator";
 import { VenueModel } from "@/models/Venue";
+import { CustodyModel, OperationsModel } from "@/models/Pilot";
 import { WaitlistModel } from "@/models/Waitlist";
 import {
   DEFAULT_ITEM_CATEGORIES,
@@ -42,9 +43,7 @@ type MockStore = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var safeTagMockStore: MockStore | undefined;
-  // eslint-disable-next-line no-var
   var safeTagDemoMockStore: MockStore | undefined;
 }
 
@@ -358,59 +357,8 @@ async function upsertVenueOperators(venueId: string, phoneNumbers: string[], con
 
 async function ensureSeedData() {
   if (!isMongoConfigured()) return;
-  // Never pollute a production database with fake demo records by default.
-  // Explicit opt-in only: SEED_DEMO=true.
-  if (process.env.NODE_ENV === "production" && process.env.SEED_DEMO !== "true") {
-    return;
-  }
   await connectToDatabase();
-
-  const venueCount = await VenueModel.countDocuments();
-  if (venueCount === 0) {
-    await VenueModel.insertMany(SEED_VENUES.map(({ seedKey, ...venue }) => venue));
-  }
-
-  const venues = await VenueModel.find({});
-  const venueByName = new Map(venues.map((venue) => [venue.name, venue]));
-
-  const operatorCount = await OperatorModel.countDocuments();
-  if (operatorCount === 0) {
-    await OperatorModel.insertMany(
-      SEED_OPERATORS.map(({ venueSeedKey, ...operator }) => ({
-        ...operator,
-        venueId: venueByName.get(getVenueNameFromSeed(venueSeedKey))?._id
-      }))
-    );
-  }
-
-  const depositCount = await DepositModel.countDocuments();
-  if (depositCount === 0) {
-    const records = SEED_DEPOSIT_TEMPLATES.map((template, index) => {
-      const venue = venueByName.get(getVenueNameFromSeed(template.venueSeedKey));
-      const checkInTime = new Date(Date.now() - template.hoursAgo * 60 * 60 * 1000);
-      const returnTime =
-        template.status === "returned"
-          ? new Date(checkInTime.getTime() + 95 * 60 * 1000)
-          : undefined;
-
-      return {
-        ...template,
-        venueId: venue?._id,
-        venueName: venue?.name,
-        venueCity: venue?.city,
-        visitorUploadPhotoUrl: template.visitorUploadPhotoUrl || undefined,
-        operatorCapturedPhotoUrl: template.operatorCapturedPhotoUrl || undefined,
-        itemsPhotoUrl: template.operatorCapturedPhotoUrl || template.visitorUploadPhotoUrl || undefined,
-        createdAt: checkInTime,
-        checkInTime,
-        returnTime,
-        collectionTime: returnTime,
-        printedAt: checkInTime
-      };
-    });
-
-    await DepositModel.insertMany(records);
-  }
+  // Runtime reads never seed customer databases. Explicit seed scripts are separate.
 }
 
 export async function getVenues() {
@@ -425,8 +373,10 @@ export async function getVenues() {
 
 export async function getApprovedPublicVenues() {
   const venues = await getVenues();
+  if (isDemoMode()) return [];
+  const reviewed = new Set(await OperationsModel.distinct("venueId", { review: "approved" }));
   return venues
-    .filter((venue) => venue.isApproved)
+    .filter((venue) => venue.isApproved && reviewed.has(venue._id))
     .map((venue) => ({
       _id: venue._id,
       name: venue.name,
@@ -966,6 +916,19 @@ export async function getPlatformSnapshot(): Promise<PlatformSnapshot> {
 }
 
 export async function getPublicStats(): Promise<PublicStats> {
+  if (!isDemoMode()) {
+    const venues = await getApprovedPublicVenues();
+    const ids = venues.map((venue) => venue._id);
+    const [total, live, today, itemCounts] = await Promise.all([
+      CustodyModel.countDocuments({ venueId: { $in: ids } }),
+      CustodyModel.countDocuments({ venueId: { $in: ids }, state: "STORED" }),
+      CustodyModel.countDocuments({ venueId: { $in: ids }, createdAt: { $gte: new Date(new Date().toISOString().slice(0, 10)) } }),
+      CustodyModel.aggregate([{ $match: { venueId: { $in: ids }, state: { $in: ["STORED", "RETURNED"] } } }, { $unwind: "$items" }, { $group: { _id: null, total: { $sum: "$items.quantity" } } }])
+    ]);
+    return { totalVenues: venues.length, approvedVenues: venues.length, totalDeposits: total, liveDeposits: live, citiesCovered: new Set(venues.map((v) => v.city)).size, venueTypes: new Set(venues.map((v) => v.type)).size, todayDeposits: today, itemsSecured: itemCounts[0]?.total || 0 };
+  }
+  return { totalVenues: 0, approvedVenues: 0, totalDeposits: 0, liveDeposits: 0, citiesCovered: 0, venueTypes: 0, todayDeposits: 0, itemsSecured: 0 };
+  /* Legacy demo metrics are deliberately excluded from public traction.
   const [venues, deposits] = await Promise.all([getVenues(), getDeposits()]);
   const approvedVenues = venues.filter((venue) => venue.isApproved);
   const today = new Date().toDateString();
@@ -980,6 +943,7 @@ export async function getPublicStats(): Promise<PublicStats> {
     todayDeposits: deposits.filter((deposit) => new Date(deposit.createdAt).toDateString() === today).length,
     itemsSecured: deposits.reduce((count, deposit) => count + deposit.itemsList.length, 0)
   };
+  */
 }
 
 export async function createWaitlistEntry(input: WaitlistInput) {
@@ -1034,7 +998,7 @@ export async function getWaitlistEntries() {
 
 export async function getWaitlistCount() {
   if (!isMongoConfigured()) {
-    return getMockStore().waitlist.length + 47;
+    return 0;
   }
 
   await ensureSeedData();

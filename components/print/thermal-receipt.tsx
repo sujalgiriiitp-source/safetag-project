@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Deposit, Venue } from "@/types";
 import { formatDateTime, maskPhone } from "@/lib/utils";
@@ -11,13 +11,15 @@ const QRCodeSVG = dynamic(() => import("qrcode.react").then((mod) => mod.QRCodeS
   loading: () => <div className="h-[150px] w-[150px] rounded-sm bg-black/5" aria-hidden="true" />,
 });
 
+const subscribeOrigin = () => () => {};
+const originSnapshot = () => window.location.origin;
+const serverOrigin = () => "";
+
 export function ThermalReceipt({ deposit, venue }: { deposit: Deposit; venue: Venue }) {
   const hasAutoPrintedRef = useRef(false);
   const printFnRef = useRef<() => void>(() => {});
-  const [receiptUrl, setReceiptUrl] = useState(() => {
-    const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "";
-    return `${base}/receipt/${deposit.tokenId}`;
-  });
+  const origin = useSyncExternalStore(subscribeOrigin, originSnapshot, serverOrigin);
+  const receiptUrl = `${process.env.NEXT_PUBLIC_APP_URL?.trim() || origin}/receipt/${deposit.tokenId}`;
   const qrSize = venue.thermalPrinterSize === "80mm" ? 180 : 150;
 
   useEffect(() => {
@@ -29,17 +31,12 @@ export function ThermalReceipt({ deposit, venue }: { deposit: Deposit; venue: Ve
       window.print();
     };
 
-    if (!process.env.NEXT_PUBLIC_APP_URL?.trim()) {
-      setReceiptUrl(`${window.location.origin}/receipt/${deposit.tokenId}`);
-    }
-
     if (hasAutoPrintedRef.current) {
       return;
     }
 
-    hasAutoPrintedRef.current = true;
-
     const timeout = window.setTimeout(() => {
+      hasAutoPrintedRef.current = true;
       printFnRef.current();
     }, 350);
 

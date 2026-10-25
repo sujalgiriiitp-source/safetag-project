@@ -1,4 +1,6 @@
 node_modules/
+node_modules
+node_modules.*/
 .env
 .env.local
 .next/
@@ -8,6 +10,12 @@ data/*.db
 .next
 out
 coverage
+*.tsbuildinfo
+.pilot-data/
+test-results/
+playwright-report/
+.env.*
+!.env.example
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

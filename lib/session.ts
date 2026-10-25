@@ -1,120 +1,62 @@
-import crypto from "crypto";
+import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { AuthSession } from "@/types";
 import { isDemoMode } from "@/lib/demo-mode";
+import { connectToDatabase } from "@/lib/mongodb";
+import { SessionModel } from "@/models/Pilot";
+import { OperatorModel } from "@/models/Operator";
+import { hash } from "@/lib/pilot/security";
 
 const COOKIE_NAME = "safetag-session";
-const DEMO_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
+const MAX_AGE = 8 * 60 * 60;
+declare global { var safeTagPilotDemoSessions: Map<string, { session: AuthSession; expiresAt: number }> | undefined }
+const demos = () => (global.safeTagPilotDemoSessions ??= new Map());
 
-type ServerSession = {
-  session: AuthSession;
-  expiresAt: number;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var safeTagDemoSessions: Map<string, ServerSession> | undefined;
+export function isPlatformAdmin(session: AuthSession | null) {
+  const allowlist = (process.env.PLATFORM_ADMIN_PHONES || "").split(",").map((value) => value.trim());
+  return Boolean(session?.platformAdmin && allowlist.includes(session.phone));
 }
 
-function getDemoSessions() {
-  global.safeTagDemoSessions ??= new Map();
-  const now = Date.now();
-  for (const [token, session] of global.safeTagDemoSessions) {
-    if (session.expiresAt <= now) global.safeTagDemoSessions.delete(token);
-  }
-  return global.safeTagDemoSessions;
-}
-
-function getSecret() {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "SESSION_SECRET is not set. Set it to a long random value before deploying — " +
-          "without it, session cookies can be forged by anyone."
-      );
-    }
-    console.warn(
-      "[safetag] SESSION_SECRET is not set — using an insecure dev-only fallback secret. " +
-        "Never deploy without a real SESSION_SECRET."
-    );
-    return "safetag-demo-secret";
-  }
-  return secret;
-}
-
-function encode(payload: AuthSession) {
-  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = crypto
-    .createHmac("sha256", getSecret())
-    .update(body)
-    .digest("base64url");
-  return `${body}.${signature}`;
-}
-
-function decode(token: string): AuthSession | null {
-  const [body, signature] = token.split(".");
-  if (!body || !signature) return null;
-  const expected = crypto
-    .createHmac("sha256", getSecret())
-    .update(body)
-    .digest("base64url");
-
-  if (expected !== signature) return null;
-
-  try {
-    return JSON.parse(Buffer.from(body, "base64url").toString()) as AuthSession;
-  } catch {
-    return null;
-  }
-}
-
+/** Opaque, server-revocable session; the cookie never contains a role or phone. */
 export async function createSessionCookie(session: AuthSession) {
-  if (isDemoMode()) {
-    const token = crypto.randomBytes(32).toString("base64url");
-    const expiresAt = Date.now() + DEMO_SESSION_MAX_AGE_SECONDS * 1000;
-    getDemoSessions().set(token, { session, expiresAt });
-
-    const cookieStore = cookies();
-    cookieStore.set(COOKIE_NAME, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: DEMO_SESSION_MAX_AGE_SECONDS
-    });
-    return;
+  const raw = randomBytes(32).toString("base64url");
+  if (isDemoMode()) demos().set(hash(raw), { session, expiresAt: Date.now() + MAX_AGE * 1000 });
+  else {
+    await connectToDatabase();
+    await SessionModel.create({ _id: hash(raw), ...session, createdAt: new Date(), expiresAt: new Date(Date.now() + MAX_AGE * 1000) });
   }
-
-  const token = encode(session);
-  const cookieStore = cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/"
+  (await cookies()).set(COOKIE_NAME, raw, {
+    httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/", maxAge: MAX_AGE
   });
 }
 
 export async function clearSessionCookie() {
-  const cookieStore = cookies();
-  const currentToken = cookieStore.get(COOKIE_NAME)?.value;
-  if (currentToken) getDemoSessions().delete(currentToken);
-  cookieStore.delete(COOKIE_NAME);
+  const store = await cookies(); const raw = store.get(COOKIE_NAME)?.value;
+  if (raw) {
+    if (isDemoMode()) demos().delete(hash(raw));
+    else { await connectToDatabase(); await SessionModel.deleteOne({ _id: hash(raw) }); }
+  }
+  store.delete(COOKIE_NAME);
 }
 
-export async function getCurrentSession() {
-  const cookieStore = cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
+export async function getCurrentSession(): Promise<AuthSession | null> {
+  const raw = (await cookies()).get(COOKIE_NAME)?.value;
+  return resolveSession(raw);
+}
+
+/** Shared by request authentication and tests; permissions are re-read, never trusted from the cookie. */
+export async function resolveSession(raw: string | undefined): Promise<AuthSession | null> {
+  if (!raw || !/^[A-Za-z0-9_-]{43}$/.test(raw)) return null;
   if (isDemoMode()) {
-    const stored = getDemoSessions().get(token);
-    if (!stored) return null;
-    if (stored.expiresAt <= Date.now()) {
-      getDemoSessions().delete(token);
-      return null;
-    }
-    return stored.session;
+    const value = demos().get(hash(raw));
+    return value && value.expiresAt > Date.now() ? value.session : null;
   }
-  return decode(token);
+  await connectToDatabase();
+  const value = await SessionModel.findOne({ _id: hash(raw), expiresAt: { $gt: new Date() } }).lean();
+  if (!value) return null;
+  const session = value as unknown as AuthSession;
+  if (session.platformAdmin) return isPlatformAdmin(session) ? session : null;
+  const operator = await OperatorModel.findOne({ _id: session.operatorId, venueId: session.venueId, isActive: true });
+  if (!operator) return null;
+  return { ...session, role: operator.role, name: operator.name, phone: operator.phone };
 }

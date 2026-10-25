@@ -4,10 +4,12 @@ import { DashboardShell } from "@/components/shared/dashboard-shell";
 import { getVenueById } from "@/lib/repository";
 import { getCurrentSession } from "@/lib/session";
 import { isDemoMode } from "@/lib/demo-mode";
+import { PilotWorkspace } from "@/components/pilot/workspace";
 
 export default async function DashboardCheckinPage() {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
+  if (!isDemoMode()) return <PilotWorkspace />;
 
   const venue = await getVenueById(session.venueId);
   if (!venue) redirect("/dashboard");

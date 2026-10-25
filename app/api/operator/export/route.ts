@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnalyticsSummary, getDeposits, getVenueById } from "@/lib/repository";
 import { getCurrentSession } from "@/lib/session";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {

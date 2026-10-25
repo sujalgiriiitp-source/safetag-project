@@ -27,6 +27,8 @@ export function OperatorLoginForm({
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [inviteToken, setInviteToken] = useState("");
   const [username, setUsername] = useState(demoCredentials?.username ?? "");
   const [password, setPassword] = useState(demoCredentials?.password ?? "");
   const [otpSent, setOtpSent] = useState(false);
@@ -76,7 +78,7 @@ export function OperatorLoginForm({
       const response = await fetch("/api/auth/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, purpose: "operator_login" })
+        body: JSON.stringify({ phone, purpose: "operator_login", inviteToken: inviteToken || undefined })
       });
       await readApiJson(response, "Unable to send OTP");
       setOtpSent(true);
@@ -94,7 +96,7 @@ export function OperatorLoginForm({
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, purpose: "operator_login", code })
+        body: JSON.stringify({ phone, purpose: "operator_login", code, totpCode, inviteToken: inviteToken || undefined })
       });
       const data = await readApiJson<{ redirectTo?: string }>(response, "Could not verify OTP");
       toast.success("Logged in successfully");
@@ -284,6 +286,8 @@ export function OperatorLoginForm({
                     {verifying ? <Spinner /> : null}
                     Verify and continue
                   </Button>
+                  <label className="grid gap-2 text-sm font-medium">Platform admin authenticator code (platform admins only)<Input value={totpCode} onChange={(event) => setTotpCode(event.target.value)} autoComplete="one-time-code" inputMode="numeric" maxLength={6} /></label>
+                  <label className="grid gap-2 text-sm font-medium">Staff invitation token (first login only)<Input value={inviteToken} onChange={(event) => setInviteToken(event.target.value)} autoComplete="off" /></label>
                 </>
               )}
             </CardContent>

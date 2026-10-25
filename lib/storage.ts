@@ -17,12 +17,12 @@ if (configured) {
 export async function uploadBase64Asset(base64: string, folder: string, publicId: string) {
   if (!base64) return "";
   if (isDemoMode()) return base64;
-  if (!configured) return base64;
+  if (!configured) throw new Error("Private storage is not configured. Use the pilot photo workflow.");
 
   const result = await cloudinary.uploader.upload(base64, {
     folder,
     public_id: publicId,
-    resource_type: "auto"
+    resource_type: "auto", type: "authenticated", overwrite: false
   });
 
   return result.secure_url;

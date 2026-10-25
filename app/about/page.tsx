@@ -39,7 +39,7 @@ export default function AboutPage() {
           <div className="mx-auto max-w-6xl px-6 py-20 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Our Mission</p>
             <h1 className="mx-auto mt-4 max-w-4xl text-5xl font-black tracking-tight text-slate-950 md:text-6xl">
-              Making India's public spaces safer, one QR code at a time.
+              Making India&apos;s public spaces safer, one QR code at a time.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-500">
               SafeTag gives every venue a proof-based, hardware-free belongings counter that works with the staff and storage space they already have.
@@ -54,7 +54,7 @@ export default function AboutPage() {
             <p className="mt-5 text-sm leading-7 text-slate-300">
               SafeTag was born at HackDiwas 3.0 at United University, Prayagraj in April 2026.
               We saw students leaving phones with roadside shopkeepers outside exam centers — no receipt,
-              no proof, no accountability. We built the solution in 36 hours. Now we're making it real.
+              no proof, no accountability. We built the solution in 36 hours. Now we&apos;re making it real.
             </p>
           </div>
 

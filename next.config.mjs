@@ -8,14 +8,10 @@ if (demoModeSetting === "true" && process.env.NODE_ENV === "production") {
 }
 
 const nextConfig = {
-  swcMinify: false,
   experimental: {
-    webpackBuildWorker: false,
-    workerThreads: false
+    cpus: 2
   },
   webpack(config, { isServer, webpack }) {
-    config.cache = false;
-    config.optimization.minimize = false;
 
     if (!isServer && process.env.SAFETAG_BUILD_PROGRESS === "1") {
       let lastLogged = 0;
