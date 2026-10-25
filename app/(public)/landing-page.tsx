@@ -4,7 +4,7 @@ import { StartupLandingPage } from "@/components/landing/startup-landing-page";
 export const metadata: Metadata = {
   title: "SafeTag — Secure Belongings | Temples, Exam Centers, Parks",
   description:
-    "India's first QR-based secure deposit system. Zero hardware, instant QR receipts, WhatsApp alerts.",
+    "QR receipts, private item evidence and verified handovers for staffed belongings counters.",
   alternates: {
     canonical: "/"
   }

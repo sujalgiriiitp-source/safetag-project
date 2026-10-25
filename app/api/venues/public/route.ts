@@ -1,4 +1,5 @@
 import { getApprovedPublicVenues } from "@/lib/repository";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

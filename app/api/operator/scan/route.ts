@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!demoMode) return NextResponse.json({ error: "Use pilot collection verification. Legacy records require manager reconciliation.", next: "/pilot" }, { status: 409 });
+
     const { tokenId, action, photoBase64, fileName } = await request.json();
     const deposit = await getDepositByTokenId(tokenId);
     if (!deposit || deposit.venueId !== session.venueId) {

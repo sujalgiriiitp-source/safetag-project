@@ -89,15 +89,6 @@ export default async function WhatsAppDemoPage() {
         }
       ];
 
-      if (!deposit.returnTime && Date.now() - new Date(deposit.checkInTime).getTime() > 2 * 60 * 60 * 1000) {
-        rows.push({
-          time: new Date(new Date(deposit.checkInTime).getTime() + 2 * 60 * 60 * 1000).toISOString(),
-          phone: deposit.guardianPhone || "",
-          visitor: deposit.visitorName,
-          type: "Reminder"
-        });
-      }
-
       if (deposit.returnTime && isTodayInIndia(deposit.returnTime)) {
         rows.push({
           time: deposit.returnTime,
@@ -159,7 +150,7 @@ export default async function WhatsAppDemoPage() {
                       <TableCell>{row.visitor}</TableCell>
                       <TableCell>{row.type}</TableCell>
                       <TableCell>
-                        <Badge variant="success">Delivered ✓✓</Badge>
+                        <Badge>Delivery unverified</Badge>
                       </TableCell>
                     </TableRow>
                   ))

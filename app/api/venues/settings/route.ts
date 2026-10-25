@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    if (JSON.stringify(body.operatorPhones || venue.operatorPhones) !== JSON.stringify(venue.operatorPhones)) return NextResponse.json({ error: "Invite or revoke staff from the pilot manager workspace" }, { status: 409 });
     const updated = await updateVenueSettings(session.venueId, {
       name: body.name || venue.name,
       address: body.address || venue.address,

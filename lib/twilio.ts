@@ -1,6 +1,7 @@
 import Twilio from "twilio";
 import { OtpPurpose } from "@/types";
 import { isDemoMode } from "@/lib/demo-mode";
+import { phone as normalizePhone } from "@/lib/pilot/security";
 
 const twilioCredentialsConfigured =
   Boolean(process.env.TWILIO_ACCOUNT_SID) &&
@@ -81,21 +82,7 @@ export async function verifyOtp(phone: string, purpose: OtpPurpose, code: string
 }
 
 function formatIndianNumber(phone: string): string {
-  let cleaned = phone.replace(/\D/g, "");
-
-  if (cleaned.startsWith("91")) {
-    cleaned = cleaned.slice(2);
-  }
-
-  if (cleaned.length === 11 && cleaned.startsWith("0")) {
-    cleaned = cleaned.slice(1);
-  }
-
-  if (cleaned.length !== 10) {
-    throw new Error(`Invalid Indian phone number: ${phone}`);
-  }
-
-  return `+91${cleaned}`;
+  return normalizePhone.parse(phone);
 }
 
 function getWhatsAppFromNumber() {
@@ -108,6 +95,7 @@ function getWhatsAppFromNumber() {
 
 export async function sendWhatsAppAlert(numbers: string[], message: string) {
   if (isDemoMode()) return null;
+  if (process.env.ALLOW_AUTHORIZED_TEST_SEND !== "true") return null;
   const uniqueNumbers = [...new Set(numbers.filter(Boolean))];
   if (!uniqueNumbers.length) return null;
 
@@ -123,9 +111,9 @@ export async function sendWhatsAppAlert(numbers: string[], message: string) {
   for (const number of uniqueNumbers) {
     try {
       const formattedPhone = formatIndianNumber(number);
+      if (!(process.env.NOTIFICATION_TEST_RECIPIENTS || "").split(",").includes(formattedPhone)) return null;
       const phone = formattedPhone.replace(/^\+91/, "");
 
-      console.log("Sending to:", formattedPhone);
 
       const response = await client.messages.create({
         from: getWhatsAppFromNumber(),
@@ -133,10 +121,10 @@ export async function sendWhatsAppAlert(numbers: string[], message: string) {
         body: message
       });
 
-      console.log(`WhatsApp sent to ${formattedPhone}:`, response.sid);
+      console.log(JSON.stringify({ event: "test_message_queued", sid: response.sid }));
       messageSids.push(response.sid);
     } catch (error) {
-      console.error(`WhatsApp error for ${number}:`, error);
+      console.error(JSON.stringify({ event: "test_message_failed", type: error instanceof Error ? error.name : "UnknownError" }));
       return null;
     }
   }

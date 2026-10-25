@@ -23,9 +23,9 @@ const footerColumns = [
   {
     title: "Legal",
     links: [
-      { href: "/about", label: "Privacy Policy" },
-      { href: "/about", label: "Terms of Service" },
-      { href: "/about", label: "Refund Policy" }
+      { href: "/privacy", label: "Privacy Policy" },
+      { href: "/terms", label: "Terms of Service" },
+      { href: "/terms", label: "Refund Policy" }
     ]
   }
 ];

@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
     const demoMode = isDemoMode();
     const session = await getCurrentSession();
 
+    if (!session) return NextResponse.json({ error: "Please sign in as venue staff" }, { status: 401 });
+    if (!demoMode) return NextResponse.json({ error: "Use the pilot check-in workspace to record items, capacity and collection credentials.", next: "/pilot", code: "PILOT_WORKFLOW_REQUIRED" }, { status: 409 });
+
     if (demoMode && (!session || session.role !== "operator")) {
       return NextResponse.json({ error: "Sign in as the demo operator to create deposits." }, { status: 401 });
     }

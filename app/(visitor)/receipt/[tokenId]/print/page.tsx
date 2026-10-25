@@ -1,22 +1,25 @@
 import { notFound } from "next/navigation";
 import { ThermalReceipt } from "@/components/print/thermal-receipt";
 import { getDepositByTokenId, getVenueById } from "@/lib/repository";
+import { getCurrentSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type ReceiptPrintPageProps = {
-  params: {
+  params: Promise<{
     tokenId?: string;
-  };
+  }>;
 };
 
 export default async function ReceiptPrintPage({ params }: ReceiptPrintPageProps) {
-  const tokenId = params?.tokenId?.trim();
+  const session = await getCurrentSession();
+  if (!session) notFound();
+  const tokenId = (await params).tokenId?.trim();
   if (!tokenId) notFound();
 
   const deposit = await getDepositByTokenId(tokenId);
-  if (!deposit) notFound();
+  if (!deposit || deposit.venueId !== session.venueId) notFound();
 
   const venue = await getVenueById(deposit.venueId);
   if (!venue) notFound();

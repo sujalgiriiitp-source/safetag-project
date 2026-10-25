@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVenues } from "@/lib/repository";
+import { getApprovedPublicVenues } from "@/lib/repository";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const approvedOnly = request.nextUrl.searchParams.get("approved") === "true";
-    const venues = await getVenues();
+    const venues = await getApprovedPublicVenues();
 
     return Response.json({
-      venues: approvedOnly ? venues.filter((venue) => venue.isApproved) : venues
+      venues
     });
   } catch (error) {
     console.error(error);

@@ -7,9 +7,9 @@ export function isEmailConfigured(): boolean {
   return Boolean(GMAIL_USER && GMAIL_APP_PASSWORD);
 }
 
-let cachedTransporter: nodemailer.Transporter | null = null;
+let cachedTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
-function getTransporter(): nodemailer.Transporter | null {
+function getTransporter(): ReturnType<typeof nodemailer.createTransport> | null {
   if (!isEmailConfigured()) return null;
   if (!cachedTransporter) {
     cachedTransporter = nodemailer.createTransport({

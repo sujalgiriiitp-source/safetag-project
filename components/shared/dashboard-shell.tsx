@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const internalLinks = [
+  { href: "/pilot", label: "Pilot Counter" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/checkin", label: "New Check-in" },
   { href: "/dashboard/scan", label: "Scan QR" },

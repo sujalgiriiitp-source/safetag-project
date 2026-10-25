@@ -57,15 +57,16 @@ export async function detectItemsFromImage(
 ) {
   const fallback = detectFromFilename(fileName, venueType);
   if (isDemoMode()) return fallback;
-  if (!visionClient || !imageBase64) return fallback;
+  if (!visionClient || !imageBase64) return [];
   const client = visionClient;
 
   const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
-  const [result] = await client.objectLocalization!({
-    image: { content: cleanBase64 }
-  });
+  const [batch] = await client.batchAnnotateImages({
+    requests: [{ image: { content: cleanBase64 }, features: [{ type: "OBJECT_LOCALIZATION" }] }]
+  }, { timeout: 5000 });
+  const result = batch.responses?.[0];
 
-  const objects = result.localizedObjectAnnotations ?? [];
+  const objects = result?.localizedObjectAnnotations ?? [];
   const allowed = new Set(DEFAULT_ITEM_CATEGORIES[venueType]);
 
   const mapped = objects
@@ -73,5 +74,5 @@ export async function detectItemsFromImage(
     .filter(Boolean)
     .filter((item) => allowed.has(item));
 
-  return [...new Set([...fallback, ...mapped])];
+  return [...new Set(mapped)];
 }

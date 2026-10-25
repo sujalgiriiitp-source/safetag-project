@@ -192,7 +192,7 @@ export default function RegisterVenuePage() {
                     <div>
                       <p className="font-semibold text-slate-800">{submittedVenueName} submitted</p>
                       <p className="mt-1 text-sm text-slate-600">
-                        ✅ Submitted! We'll approve within 24 hours. Confirmation WhatsApp contact number par bhej diya gaya hai.
+                        Submitted for review. Approval and WhatsApp delivery are not yet confirmed.
                       </p>
                       <p className="mt-3 text-sm font-semibold text-emerald-700">
                         Need help? WhatsApp: +91 6306601592

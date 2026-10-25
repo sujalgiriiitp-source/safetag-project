@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Demo login is disabled." }, { status: 404 });
     }
 
-    const clientKey = request.ip || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+    const clientKey = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
     if (isRateLimited(clientKey)) {
       return NextResponse.json({ error: "Too many demo login attempts. Try again in 15 minutes." }, { status: 429 });
     }

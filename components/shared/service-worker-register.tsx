@@ -14,7 +14,7 @@ export function ServiceWorkerRegister() {
       });
       if ("caches" in window) {
         caches.keys().then((cacheKeys) => {
-          cacheKeys.forEach((key) => {
+          cacheKeys.filter((key) => key.startsWith("safetag-")).forEach((key) => {
             caches.delete(key);
           });
         });

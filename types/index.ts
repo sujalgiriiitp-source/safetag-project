@@ -115,6 +115,7 @@ export interface AuthSession {
   role: OperatorRole;
   phone: string;
   name: string;
+  platformAdmin?: boolean;
 }
 
 export interface VenueTypeMeta {

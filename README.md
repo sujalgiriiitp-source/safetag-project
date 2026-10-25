@@ -1,6 +1,19 @@
 # SafeTag — Universal Secure Storage Platform
 
-SafeTag is a production-ready Next.js app for QR-based secure belongings management across exam centers, temples, parks, museums, events, and public venues. It uses zero hardware, instant QR receipts, photo proof, WhatsApp alerts, MongoDB, Cloudinary, and Google Vision-ready integrations.
+SafeTag is a controlled-pilot candidate for staffed belongings custody. Production launch is not approved. Read [verification](docs/pilot/VERIFICATION.md), [AWS prerequisites](docs/pilot/AWS-PREREQUISITES.md), and [migration](docs/pilot/MIGRATION.md) before enabling any real venue or provider.
+
+## Local verification
+
+Use Node 22 in a non-synced working directory. On macOS, iCloud-evicted source/dependency placeholders can return incomplete modules or stall reads. Do not run installs while builds/tests are using the same dependencies.
+
+1. Install locked dependencies with `npm ci --include=dev`.
+2. Start a dedicated MongoDB 8 process bound to `127.0.0.1:27029` with a new, local-only data directory. Do not point tests at a real database.
+3. Install Chromium with `npx playwright install chromium` (or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE`; installed Chrome is used on macOS).
+4. Leave localhost port 3100 free and run `npm run verify:local`.
+
+The runner executes compiler checks, lint, every top-level `tests/*.test.mts` file, a production build, synthetic fixtures and all Playwright tests. It overrides provider credentials, uses unique `safetag_test_*` databases on the isolated local MongoDB, stops its own app server and drops only those generated databases. Results are written to `.pilot-data/verification/`; synthetic screenshots and thermal PDFs are in `test-results/`.
+
+The pilot workspace is `/pilot`, platform review is `/pilot/platform`, and visitor receipt secrets use `/pilot/receipt#...`. Receipt view access is not collection authorization. Missing provider configuration is not successful delivery.
 
 ## Setup
 
@@ -28,10 +41,7 @@ The demo login allows five failed attempts per client IP in a 15-minute window. 
 
 ## Deploy
 
-1. Push to GitHub
-2. Connect to Vercel
-3. Add env variables in Vercel dashboard
-4. Deploy
+No deployment is authorized yet. The proposed AWS topology and release gates are documented in [AWS prerequisites](docs/pilot/AWS-PREREQUISITES.md). Build and test a private staging environment only after explicit approval. No AWS resources were created or connected during local verification.
 
 ## Seed Database
 
@@ -58,5 +68,5 @@ npm run typecheck
 npm run build
 ```
 
-SafeTag falls back to seeded in-memory data when `MONGODB_URI` is missing. Twilio is optional for non-demo environments; demo mode blocks OTP and outbound messaging.
+Outside explicit local demo mode, MongoDB is required and missing configuration fails closed. Staff OTP requires Twilio Verify; outbound pilot notifications stay disabled until approved sender/templates, consent and callbacks are configured. The existing seed command is development-only and must not be used to fabricate production venues, operators or traction.
 # safetag-project

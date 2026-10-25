@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui/table";
 import { getDeposits, getPlatformSnapshot, getVenues, getWaitlistEntries } from "@/lib/repository";
-import { getCurrentSession } from "@/lib/session";
+import { getCurrentSession, isPlatformAdmin } from "@/lib/session";
 import { formatDateTime, formatStatus, resolveDepositStatus } from "@/lib/utils";
 
 function getSuperAdminStatusBadgeClass(statusLabel: string) {
@@ -47,7 +47,7 @@ export default async function SuperAdminPage() {
   const session = await getCurrentSession();
   // TODO(security): AuthSession has no "superadmin" role (OperatorRole = "operator" | "admin").
   // Gating on "admin" as a stopgap — add a real superadmin role/allowlist before production use.
-  if (!session || session.role !== "admin") {
+  if (!isPlatformAdmin(session)) {
     redirect("/login");
   }
 
